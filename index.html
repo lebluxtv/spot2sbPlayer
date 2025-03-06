@@ -1,33 +1,36 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Lecteur spot2sb - Barre en bas</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Lecteur Spot2SB</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="player" id="player">
-    <!-- Arrière-plan flou / étiré -->
+    <!-- Arrière-plan flou -->
     <div class="bg-blur" id="bg-blur"></div>
 
-    <!-- Contenu principal (pochette, titres, etc.) -->
     <div class="player-content">
+      <!-- Pochette album -->
       <div class="cover-art" id="cover-art"></div>
-      <div class="text-info">
+
+      <!-- Zone texte + barre -->
+      <div class="info-bar">
         <div class="track-name" id="track-name">BACKBONE</div>
         <div class="artist-name" id="artist-name">Chase &amp; Status</div>
-      </div>
-      <!-- Timer affichant le temps restant -->
-      <div class="time-remaining" id="time-remaining">0:39</div>
-    </div>
 
-    <!-- Barre de progression en bas (pleine au début) -->
-    <div class="time-bar-bg" id="time-bar-bg">
-      <div class="time-bar-fill" id="time-bar-fill"></div>
+        <!-- Barre de progression -->
+        <div class="time-bar-bg">
+          <div class="time-bar-fill" id="time-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Timer à droite (affiche le temps restant, par ex. 0:26) -->
+      <div class="time-remaining" id="time-remaining">0:26</div>
     </div>
   </div>
 
-  <!-- Script JS -->
   <script src="script.js"></script>
 </body>
 </html>
+
