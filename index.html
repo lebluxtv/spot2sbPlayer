@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Lecteur Spot2SB</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="player" id="player">
@@ -16,8 +16,8 @@
 
       <!-- Zone texte + barre -->
       <div class="info-bar">
-        <div class="track-name" id="track-name">BACKBONE</div>
-        <div class="artist-name" id="artist-name">Chase &amp; Status</div>
+        <div class="track-name" id="track-name">Titre</div>
+        <div class="artist-name" id="artist-name">Artiste</div>
 
         <!-- Barre de progression -->
         <div class="time-bar-bg">
@@ -25,12 +25,18 @@
         </div>
       </div>
 
-      <!-- Timer à droite (affiche le temps restant, par ex. 0:26) -->
-      <div class="time-remaining" id="time-remaining">0:26</div>
+      <!-- Timer à droite (affiche le temps restant) -->
+      <div class="time-remaining" id="time-remaining">0:00</div>
     </div>
   </div>
-<script type="text/javascript" src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js"></script>
+
+  <!-- On charge la librairie StreamerbotClient depuis unpkg -->
+  <script 
+    type="text/javascript" 
+    src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js">
+  </script>
+
+  <!-- Puis on charge notre script.js qui utilise StreamerbotClient -->
   <script src="script.js"></script>
 </body>
 </html>
-
