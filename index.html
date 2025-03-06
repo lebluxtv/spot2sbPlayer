@@ -2,35 +2,32 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Prototype spot2sb</title>
+  <title>Lecteur spot2sb - Barre en bas</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="player" id="player">
-    <!-- Arrière-plan étiré -->
-    <div class="player-bg" id="player-bg"></div>
+    <!-- Arrière-plan flou / étiré -->
+    <div class="bg-blur" id="bg-blur"></div>
 
-    <!-- Contenu du lecteur -->
+    <!-- Contenu principal (pochette, titres, etc.) -->
     <div class="player-content">
-      <!-- Illustration d’album -->
-      <div class="album-art" id="album-art"></div>
-
-      <!-- Informations sur le morceau -->
-      <div class="track-info">
-        <div class="track-name" id="track-name">Titre de la chanson</div>
-        <div class="artist-name" id="artist-name">Nom de l’artiste</div>
-
+      <div class="cover-art" id="cover-art"></div>
+      <div class="text-info">
+        <div class="track-name" id="track-name">BACKBONE</div>
+        <div class="artist-name" id="artist-name">Chase &amp; Status</div>
       </div>
+      <!-- Timer affichant le temps restant -->
+      <div class="time-remaining" id="time-remaining">0:39</div>
+    </div>
 
-      <!-- Barre temporelle + timer -->
-      <div class="time-bar-container">
-        <div class="time-bar-bg"></div>
-        <div class="time-bar" id="time-bar"></div>
-        <div class="timer" id="timer">0:00</div>
-      </div>
+    <!-- Barre de progression en bas (pleine au début) -->
+    <div class="time-bar-bg" id="time-bar-bg">
+      <div class="time-bar-fill" id="time-bar-fill"></div>
     </div>
   </div>
-<script type="text/javascript" src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js"></script>
+
+  <!-- Script JS -->
   <script src="script.js"></script>
 </body>
 </html>
