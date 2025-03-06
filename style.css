@@ -5,145 +5,96 @@
   box-sizing: border-box;
 }
 
-/* Corps de page : fond noir, par exemple */
 body {
-  background-color: #000;
+  background: #111; /* fond sombre */
   font-family: sans-serif;
   color: #fff;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100vh;
 }
 
-/* Container principal du lecteur */
+/* Container principal du player */
 .player {
   position: relative;
   width: 600px;
-  height: 100px;
+  height: 120px;
   overflow: hidden;
+  border: 1px solid #333;
 }
 
-/* Arrière-plan étiré */
-.player-bg {
+/* Arrière-plan flou / étiré */
+.bg-blur {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0; right: 0; bottom: 0;
   background-size: cover;
   background-position: center;
   filter: blur(8px);
-  transform: scale(1.1);
-  opacity: 0;
-  transition: opacity 0.8s ease;
+  transform: scale(1.2);
+  opacity: 0.7;
+  z-index: 1;
 }
 
-/* Contenu au premier plan */
+/* Contenu principal (pochette, titre, etc.) */
 .player-content {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
-  height: 100%;
-  padding: 0 10px;
+  height: 80px;
+  padding: 10px;
 }
 
-/* Illustration d'album */
-.album-art {
+/* Pochette d'album */
+.cover-art {
   width: 80px;
   height: 80px;
   background-size: cover;
   background-position: center;
-  margin-right: 15px;
-  opacity: 0;
-  transform: translateX(-30px);
-  animation: slideInLeft 0.6s forwards;
+  margin-right: 10px;
 }
 
-/* Infos de piste */
-.track-info {
+/* Zone texte */
+.text-info {
   flex: 1;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .track-name {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  opacity: 0;
-  transform: translateX(30px);
-  animation: slideInRight 0.6s forwards;
-  animation-delay: 0.2s;
-  white-space: nowrap;
   margin-bottom: 4px;
 }
 
 .artist-name {
   font-size: 0.9rem;
-  opacity: 0;
-  transform: translateX(30px);
-  animation: slideInRight 0.6s forwards;
-  animation-delay: 0.4s;
-  white-space: nowrap;
+  opacity: 0.8;
 }
 
-/* Barre de progression */
-.time-bar-container {
-  position: relative;
-  width: 150px;
-  height: 8px;
-  margin-left: 15px;
-  margin-right: 10px;
+/* Timer à droite */
+.time-remaining {
+  margin-left: 10px;
+  font-size: 0.9rem;
+  font-weight: bold;
 }
 
+/* Barre de progression en bas */
 .time-bar-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  left: 0; 
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: rgba(255,255,255,0.2);
+  z-index: 2;
 }
 
-/* Barre qui se remplit */
-.time-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0%; /* Départ à 0% */
-  height: 8px;
-  background: #1db954; /* Couleur type Spotify */
-  border-radius: 4px;
-}
-
-/* Timer */
-.timer {
-  font-size: 0.8rem;
-  width: 40px;
-  text-align: center;
-  margin-left: 5px;
-}
-
-/* Animations de slide */
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.time-bar-fill {
+  width: 100%; /* pleine au départ */
+  height: 100%;
+  background: #ff4444; /* couleur de remplissage */
+  transition: width 0.5s linear; /* lissage */
 }
