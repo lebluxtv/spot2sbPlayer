@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prototype spot2sb</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="player" id="player">
+    <!-- Arrière-plan étiré -->
+    <div class="player-bg" id="player-bg"></div>
+
+    <!-- Contenu du lecteur -->
+    <div class="player-content">
+      <!-- Illustration d’album -->
+      <div class="album-art" id="album-art"></div>
+
+      <!-- Informations sur le morceau -->
+      <div class="track-info">
+        <div class="track-name" id="track-name">Titre de la chanson</div>
+        <div class="artist-name" id="artist-name">Nom de l’artiste</div>
+
+      </div>
+
+      <!-- Barre temporelle + timer -->
+      <div class="time-bar-container">
+        <div class="time-bar-bg"></div>
+        <div class="time-bar" id="time-bar"></div>
+        <div class="timer" id="timer">0:00</div>
+      </div>
+    </div>
+  </div>
+<script type="text/javascript" src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
