@@ -4,20 +4,25 @@
  * la barre de progression, ET la colorimétrie via ColorThief
  * + variations (barre plus sombre, titre/artiste plus clair)
  * + utilisation HSL pour éviter le blanc (saturation min, L max).
+ * 
+ * Maintenant, on gère aussi un champ "progress" (en secondes)
+ * pour afficher la barre au bon endroit si l'utilisateur 
+ * avance/recul dans la musique.
  ************************************************************/
 
 let currentInterval = null;
+let timeLeft = 0;
 let isPaused = false;
 
-// Valeur par défaut si data.duration est absent
+// Valeur par défaut (en secondes) si data.duration est absent
 let trackDuration = 180;
 
-// Récupération des paramètres d'URL
+// 1) Récupération des paramètres d'URL
 const urlParams = new URLSearchParams(window.location.search);
 const customWidth = urlParams.get('width');
 const customBarColor = urlParams.get('barColor');
 
-// Appliquer la largeur personnalisée si demandée
+// 2) Appliquer la largeur personnalisée si demandée
 if (customWidth) {
   const playerElement = document.querySelector('.player');
   playerElement.style.width = customWidth + 'px';
@@ -36,7 +41,8 @@ let lastSongName = "";
 
 // Écoute unique de l'événement "General.Custom"
 client.on('General.Custom', ({ event, data }) => {
-  if (!data || data.widget !== 'spot2sbPlayer') return;
+  // Filtre sur widget
+  if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
   // 1) Gestion pause / play
@@ -49,39 +55,42 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // 2) Nouvelle piste
+  // 2) Gestion nouvelle piste
   if (data.songName) {
     // Vérification anti-doublon
+    // (si on ne veut recharger la couleur que si le titre change)
+    // => Vous pouvez adapter selon votre besoin.
     if (data.songName === lastSongName) {
-      return;
+      // Si la chanson est la même mais que "progress" a changé,
+      // on pourrait faire un "update partiel". 
+      // Ici on recharge tout de façon simple :
+      console.log("Même titre détecté, on recharge la barre si le progress diffère...");
     }
     lastSongName = data.songName;
 
-    const { songName, artistName, albumArtUrl } = data;
-    // Durée totale
-    const totalDuration = data.duration || 180;
-    // Progression déjà écoulée
-    const progress = data.progress || 0;
+    // Récupération des champs
+    const songName    = data.songName;
+    const artistName  = data.artistName;
+    const albumArtUrl = data.albumArtUrl || "";
+    // Durée totale (secondes)
+    trackDuration     = data.duration || 180; 
+    // Progression actuelle (secondes)
+    const progressSec = data.progress ? parseInt(data.progress, 10) : 0;
+    // Sécurité : si progressSec dépasse la durée, on limite à la durée
+    const initialTimeLeft = Math.max(0, trackDuration - progressSec);
 
-    // On calcule le temps restant
-    let timeRemainingSec = totalDuration - progress;
-    if (timeRemainingSec < 0) {
-      timeRemainingSec = 0;
-    }
-
-    loadNewTrack(songName, artistName, albumArtUrl, timeRemainingSec);
+    // On charge la piste en précisant le temps restant
+    loadNewTrack(songName, artistName, albumArtUrl, trackDuration, initialTimeLeft);
   }
 });
 
 /************************************************************
  * loadNewTrack
  * - Met à jour la pochette, le fond flou
- * - Gère la barre de progression (départ à 100%, descend)
+ * - Gère la barre de progression (partant de "initialTimeLeft")
  * - Gère la colorimétrie (barColor param ou ColorThief)
- * 
- * Param "durationSec" = temps restant (après soustraction de progress)
  ************************************************************/
-function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
+function loadNewTrack(songName, artistName, albumArtUrl, durationSec, initialTimeLeft) {
   const bgBlur        = document.getElementById("bg-blur");
   const coverArt      = document.getElementById("cover-art");
   const trackNameEl   = document.getElementById("track-name");
@@ -89,41 +98,49 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Mise à jour de base
+  // Mise à jour de base (fond flou, pochette, textes)
   bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
   trackNameEl.textContent = songName;
   artistNameEl.textContent = artistName;
+
+  // Barre pleine au départ
   timeBarFill.style.width = "100%";
 
-  let timeLeft = durationSec;
+  // On stocke la durée et le temps restant
+  trackDuration = durationSec;
+  timeLeft      = initialTimeLeft;
   timeRemaining.textContent = formatTime(timeLeft);
 
-  // Stop l'ancien interval
+  // Stop l'ancien interval s'il existait
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
   }
 
-  // Couleur de la barre
+  // Si param "barColor" => on l’utilise directement
   if (customBarColor) {
-    // Si paramètre barColor => on l’utilise
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
-    // Sinon, ColorThief
+    // Sinon, on utilise ColorThief pour calculer la couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
-    img.crossOrigin = "anonymous"; 
+    img.crossOrigin = "anonymous"; // nécessaire si l'image autorise CORS
     img.src = albumArtUrl;
 
     img.onload = function() {
+      // Couleur dominante brute
       let [r, g, b] = colorThief.getColor(img);
-      // Vibrant
+
+      // 1) On la rend "vibrante" => impose minSat=0.5, maxLight=0.8
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
-      // Variations
+      // 2) On crée des variations en RGB
+      //   Barre plus sombre => factor < 1
       const barColorArr    = adjustColor(r, g, b, 0.8);
+      //   Titre plus clair => factor > 1
       const titleColorArr  = adjustColor(r, g, b, 1.4);
+      //   Artiste & Timer un peu plus clairs
       const artistColorArr = adjustColor(r, g, b, 1.2);
       const timerColorArr  = adjustColor(r, g, b, 1.2);
 
@@ -134,12 +151,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
     };
   }
 
-  // Relance la progression
+  // Relance la progression (1s interval)
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
       timeLeft--;
-      if (timeLeft < 0) {
+      if (timeLeft <= 0) {
         timeLeft = 0;
         clearInterval(currentInterval);
         currentInterval = null;
@@ -195,13 +212,16 @@ function rgbString([r, g, b]) {
 /************************************************************
  * makeVibrant(r, g, b, minSat, maxLight)
  * -> Convertit en HSL, force S >= minSat, L <= maxLight
+ * -> Retourne [R, G, B] "vibrants" (évite le blanc)
  ************************************************************/
 function makeVibrant(r, g, b, minSat, maxLight) {
   let [h, s, l] = rgbToHsl(r, g, b);
 
+  // Forcer min de saturation
   if (s < minSat) {
     s = minSat;
   }
+  // Limiter la luminosité
   if (l > maxLight) {
     l = maxLight;
   }
@@ -211,6 +231,7 @@ function makeVibrant(r, g, b, minSat, maxLight) {
 
 /************************************************************
  * rgbToHsl(r, g, b)
+ * -> renvoie [h, s, l] ∈ [0..1]
  ************************************************************/
 function rgbToHsl(r, g, b) {
   r /= 255; 
@@ -223,10 +244,13 @@ function rgbToHsl(r, g, b) {
   let l = (max + min) / 2;
 
   if (max === min) {
-    h = 0; s = 0;
+    // gris neutre
+    h = 0;
+    s = 0;
   } else {
     const diff = max - min;
     s = (l > 0.5) ? diff / (2 - max - min) : diff / (max + min);
+
     switch (max) {
       case r:
         h = (g - b) / diff + (g < b ? 6 : 0);
@@ -245,9 +269,11 @@ function rgbToHsl(r, g, b) {
 
 /************************************************************
  * hslToRgb(h, s, l)
+ * -> renvoie [r, g, b] ∈ [0..255]
  ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
+    // gris neutre
     const val = Math.round(l * 255);
     return [val, val, val];
   }
@@ -261,8 +287,8 @@ function hslToRgb(h, s, l) {
     return p;
   };
 
-  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l * s);
-  const p = 2 * l - q;
+  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
+  const p = 2*l - q;
 
   const r = hue2rgb(p, q, h + 1/3);
   const g = hue2rgb(p, q, h);
