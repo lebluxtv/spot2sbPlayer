@@ -29,7 +29,15 @@ const client = new StreamerbotClient({
   endpoint: '/',
   password: 'streamer.bot'
 });
-
+// Quand la connexion est établie, on envoie "request: nowPlaying"
+client.on('connected', () => {
+  console.log("Overlay connected. Demande de nowPlaying...");
+  // On envoie un message General.Custom
+  client.send("General.Custom", {
+    widget: "spot2sbPlayer",
+    request: "nowPlaying"
+  });
+});
 /**
  * Écoute de l'événement "General.Custom"
  * -> Si widget = "spot2sbPlayer", on traite le message
