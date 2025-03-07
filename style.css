@@ -18,7 +18,7 @@ body {
 /* Container principal */
 .player {
   position: relative;
-  width: 600px;
+  width: 600px; /* Valeur par défaut */
   height: 100px;
   overflow: hidden;
 }
@@ -35,12 +35,21 @@ body {
   z-index: 1;
 }
 
+/* Voile sombre pour améliorer la lisibilité du texte */
+.bg-blur::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  pointer-events: none; /* Laisse les clics traverser */
+}
+
 /* Contenu (pochette, infos, timer) */
 .player-content {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: center;   /* Centre verticalement */
+  align-items: center; /* Centre verticalement */
   height: 100%;
   padding: 0 10px;
 }
@@ -58,7 +67,7 @@ body {
 .info-bar {
   display: flex;
   flex-direction: column;
-  justify-content: center; 
+  justify-content: center;
   flex: 1;
 }
 
@@ -88,7 +97,7 @@ body {
   left: 0; top: 0;
   width: 100%; /* départ plein */
   height: 100%;
-  background: #0f0; /* vert */
+  background: #0f0; /* vert par défaut */
   transition: width 0.5s linear;
 }
 
