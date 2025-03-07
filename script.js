@@ -12,8 +12,8 @@ let isPaused = false;
 
 // Paramètres d'URL (ex. ?width=700&barColor=ff0000)
 const urlParams = new URLSearchParams(window.location.search);
-const customWidth   = urlParams.get('width');
-const customBarColor= urlParams.get('barColor');
+const customWidth    = urlParams.get('width');
+const customBarColor = urlParams.get('barColor');
 
 // Ajuste la largeur si demandée
 if (customWidth) {
@@ -72,7 +72,7 @@ client.on('General.Custom', ({ event, data }) => {
 /************************************************************
  * loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec)
  * -> Pour une NOUVELLE piste : on réinitialise images, couleurs,
- *    timer local, etc. sans repartir à 100% si le progress est > 0.
+ *    timer local, etc. en tenant compte du progress déjà écoulé.
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
   // Sélections
@@ -89,12 +89,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   trackNameEl.textContent        = songName;
   artistNameEl.textContent       = artistName;
 
-  // Calcule le temps restant local
+  // Calcule la durée et le temps restant
   trackDuration = durationSec;
-  timeLeft      = Math.max(0, durationSec - progressSec); // ex: 180 - 42 = 138
-  timeRemaining.textContent = formatTime(timeLeft);
+  timeLeft      = Math.max(0, durationSec - progressSec); 
+  // Ex: si la chanson dure 180s et on est déjà à 42s, timeLeft=138
 
-  // Position initiale de la barre en fonction de "progress"
+  // Mise à jour de l'affichage
+  timeRemaining.textContent = formatTime(timeLeft);
   const percent = (timeLeft / durationSec) * 100;
   timeBarFill.style.width = percent + "%";
 
@@ -132,49 +133,46 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     };
   }
 
-  // Lance le timer local (1s)
+  // Relance la progression
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
       timeLeft--;
-      if (timeLeft < 0) timeLeft = 0;
-
-      timeRemaining.textContent = formatTime(timeLeft);
-      const percent2 = (timeLeft / durationSec) * 100;
-      timeBarFill.style.width = percent2 + "%";
-
       if (timeLeft <= 0) {
+        timeLeft = 0;
         clearInterval(currentInterval);
         currentInterval = null;
       }
+      timeRemaining.textContent = formatTime(timeLeft);
+      const pct = (timeLeft / durationSec) * 100;
+      timeBarFill.style.width = pct + "%";
     }
   }, 1000);
 }
 
 /************************************************************
  * syncProgress(progressSec)
- * -> Même piste, on recadre juste la barre si on a sauté
- *    ou reculé (ex. progressSec = 127 => plus tard).
+ * -> La chanson n'a pas changé, mais on a reçu un nouveau progress
+ *    (l'utilisateur a avancé/reculé dans la musique). On recadre
+ *    la barre et le timer sans tout réinitialiser.
  ************************************************************/
 function syncProgress(progressSec) {
+  // Si la chanson dure 180s et progress=60, alors timeLeft=120
   const newTimeLeft = Math.max(0, trackDuration - progressSec);
+
+  // On ne redémarre pas tout, on recadre juste l'écart
   const diff = Math.abs(newTimeLeft - timeLeft);
-  // On ne recadre que si l'écart est significatif (ex. > 1s)
-  if (diff > 1) {
-    console.log("syncProgress -> recadrage:", diff, "secondes");
+  // S'il y a un gros écart, on recadre brutalement
+  if (diff > 2) {
     timeLeft = newTimeLeft;
-
-    const timeBarFill   = document.getElementById("time-bar-fill");
-    const timeRemaining = document.getElementById("time-remaining");
-
-    timeRemaining.textContent = formatTime(timeLeft);
-    const percent = (timeLeft / trackDuration) * 100;
-    timeBarFill.style.width = percent + "%";
+    document.getElementById("time-remaining").textContent = formatTime(timeLeft);
+    const pct = (timeLeft / trackDuration) * 100;
+    document.getElementById("time-bar-fill").style.width = pct + "%";
   }
 }
 
 /************************************************************
- * Pause / Lecture
+ * Pause / Reprise
  ************************************************************/
 function pauseProgressBar() {
   isPaused = true;
@@ -217,39 +215,55 @@ function rgbString([r, g, b]) {
 /************************************************************
  * makeVibrant(r, g, b, minSat, maxLight)
  * -> Convertit en HSL, force S >= minSat, L <= maxLight
- * -> Retourne [R, G, B] vibrants
+ * -> Retourne [R, G, B] "vibrants" (évite le blanc)
  ************************************************************/
 function makeVibrant(r, g, b, minSat, maxLight) {
   let [h, s, l] = rgbToHsl(r, g, b);
-  if (s < minSat) s = minSat;
-  if (l > maxLight) l = maxLight;
+
+  // Forcer min de saturation
+  if (s < minSat) {
+    s = minSat;
+  }
+  // Limiter la luminosité
+  if (l > maxLight) {
+    l = maxLight;
+  }
+
   return hslToRgb(h, s, l);
 }
 
 /************************************************************
- * rgbToHsl(r, g, b) -> [h, s, l]
+ * rgbToHsl(r, g, b)
+ * -> renvoie [h, s, l] ∈ [0..1]
  ************************************************************/
 function rgbToHsl(r, g, b) {
   r /= 255; 
   g /= 255; 
   b /= 255;
+
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h, s;
-  let l = (max + min)/2;
+  let l = (max + min) / 2;
 
   if (max === min) {
-    h = 0; 
+    // gris neutre
+    h = 0;
     s = 0;
   } else {
     const diff = max - min;
-    s = (l > 0.5)
-      ? diff / (2 - max - min)
-      : diff / (max + min);
+    s = (l > 0.5) ? diff / (2 - max - min) : diff / (max + min);
+
     switch (max) {
-      case r: h = (g - b)/diff + (g < b ? 6 : 0); break;
-      case g: h = (b - r)/diff + 2; break;
-      case b: h = (r - g)/diff + 4; break;
+      case r:
+        h = (g - b) / diff + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / diff + 2;
+        break;
+      case b:
+        h = (r - g) / diff + 4;
+        break;
     }
     h /= 6;
   }
@@ -257,30 +271,35 @@ function rgbToHsl(r, g, b) {
 }
 
 /************************************************************
- * hslToRgb(h, s, l) -> [r, g, b]
+ * hslToRgb(h, s, l)
+ * -> renvoie [r, g, b] ∈ [0..255]
  ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
-    const val = Math.round(l*255);
+    // gris
+    const val = Math.round(l * 255);
     return [val, val, val];
   }
+
   const hue2rgb = (p, q, t) => {
-    if (t<0) t+=1;
-    if (t>1) t-=1;
-    if (t<1/6) return p+(q-p)*6*t;
-    if (t<1/2) return q;
-    if (t<2/3) return p+(q-p)*(2/3 - t)*6;
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
     return p;
   };
 
-  const q = (l<0.5) ? (l*(1+s)) : (l + s - l*s);
+  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
   const p = 2*l - q;
-  const r = hue2rgb(p, q, h+1/3);
+
+  const r = hue2rgb(p, q, h + 1/3);
   const g = hue2rgb(p, q, h);
-  const b = hue2rgb(p, q, h-1/3);
+  const b = hue2rgb(p, q, h - 1/3);
+
   return [
-    Math.round(r*255),
-    Math.round(g*255),
-    Math.round(b*255)
+    Math.round(r * 255),
+    Math.round(g * 255),
+    Math.round(b * 255)
   ];
 }
