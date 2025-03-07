@@ -95,7 +95,7 @@ body {
 .time-bar-fill {
   position: absolute;
   left: 0; top: 0;
-  width: 100%;
+  width: 100%; /* départ plein */
   height: 100%;
   background: #0f0; /* Vert par défaut */
   transition: width 0.5s linear;
