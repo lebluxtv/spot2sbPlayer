@@ -2,26 +2,25 @@
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, ET la colorimétrie via ColorThief
- * avec variations (barre plus sombre, titre/artiste/timer plus clairs).
+ * + variations (barre plus sombre, titre/artiste plus clair).
  ************************************************************/
 
 let currentInterval = null;
-let timeLeft = 0;          // Nombre de secondes restantes
-let isPaused = false;      // Indique si on est en pause
-let trackDuration = 180;   // Valeur par défaut
+let timeLeft = 0;
+let isPaused = false;
+let trackDuration = 180;
 
-// 1) Récupération des paramètres dans l'URL
+// 1) Récupération des paramètres d'URL
 const urlParams = new URLSearchParams(window.location.search);
-const customWidth = urlParams.get('width');     // ex. ?width=800
-const customBarColor = urlParams.get('barColor'); // ex. &barColor=ff0000
+const customWidth = urlParams.get('width');
+const customBarColor = urlParams.get('barColor');
 
-// 2) Appliquer la largeur personnalisée (si présente)
+// 2) Appliquer la largeur personnalisée
 if (customWidth) {
-  const playerElement = document.querySelector('.player');
-  playerElement.style.width = customWidth + 'px';
+  document.querySelector('.player').style.width = customWidth + 'px';
 }
 
-// Création du client WebSocket (via streamerbot-client)
+// WebSocket
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -29,42 +28,29 @@ const client = new StreamerbotClient({
   password: 'streamer.bot'
 });
 
-/**
- * Écoute de l'événement "General.Custom"
- */
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
-
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 1) Si on reçoit un message "state" (lecture/pause)
   if (data.state === 'paused') {
-    console.log("Player: paused");
-    pauseProgressBar(); 
+    pauseProgressBar();
     return;
-  }
-  else if (data.state === 'playing') {
-    console.log("Player: playing");
+  } else if (data.state === 'playing') {
     resumeProgressBar();
     return;
   }
 
-  // 2) Sinon, c'est un message complet "nouvelle piste"
   if (data.songName) {
-    const songName    = data.songName;
-    const artistName  = data.artistName;
-    const albumArtUrl = data.albumArtUrl || "";
-    trackDuration     = data.duration || 180; 
+    const { songName, artistName, albumArtUrl, duration } = data;
+    trackDuration = duration || 180;
     loadNewTrack(songName, artistName, albumArtUrl, trackDuration);
   }
 });
 
 /************************************************************
- * Fonction loadNewTrack
+ * loadNewTrack
  * - Met à jour la pochette, le fond flou
- * - Gère la barre de progression
- * - Si barColor n'est pas défini, on calcule une couleur via ColorThief
- *   puis on applique des variations (barre plus sombre, textes plus clairs).
+ * - Barre + texte => variations de couleur via adjustColor()
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   const bgBlur        = document.getElementById("bg-blur");
@@ -74,62 +60,50 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Arrière-plan flou
   bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
-  // Pochette
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
-  // Titres
   trackNameEl.textContent = songName;
   artistNameEl.textContent = artistName;
-
-  // Barre pleine
   timeBarFill.style.width = "100%";
 
-  // On redéfinit le temps restant
   timeLeft = durationSec;
   timeRemaining.textContent = formatTime(timeLeft);
 
-  // On arrête l'ancien interval
+  // Stop l'ancien interval
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
   }
 
-  // Si on a un paramètre "barColor" => on l'utilise directement
+  // Si param "barColor", on l'utilise directement
   if (customBarColor) {
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
-    // Sinon, on tente de récupérer la couleur dominante via ColorThief
-    // (l'image doit autoriser le cross-origin)
+    // Sinon, on utilise ColorThief
     const colorThief = new ColorThief();
     const img = new Image();
-    img.crossOrigin = "anonymous"; 
+    img.crossOrigin = "anonymous";
     img.src = albumArtUrl;
 
     img.onload = function() {
-      // Extraire la couleur dominante => [r, g, b]
-      const color = colorThief.getColor(img);
-      const [r, g, b] = color;
+      const [r, g, b] = colorThief.getColor(img);
 
-      // On crée des variations
-      // Bar: plus sombre (factor < 1)
-      const barColor       = adjustColor(r, g, b, 0.8);
-      // Titre: beaucoup plus clair (factor > 1)
-      const titleColor     = adjustColor(r, g, b, 1.4);
+      // Barre: plus sombre
+      const barColor = adjustColor(r, g, b, 0.8);
+      // Titre: beaucoup plus clair
+      const titleColor = adjustColor(r, g, b, 1.4);
       // Artiste & timer: un peu plus clair
-      const artistColor    = adjustColor(r, g, b, 1.2);
-      const timerColor     = adjustColor(r, g, b, 1.2);
+      const artistColor = adjustColor(r, g, b, 1.2);
+      const timerColor  = adjustColor(r, g, b, 1.2);
 
-      // Applique la couleur
       timeBarFill.style.backgroundColor = rgbString(barColor);
-
       trackNameEl.style.color   = rgbString(titleColor);
       artistNameEl.style.color  = rgbString(artistColor);
       timeRemaining.style.color = rgbString(timerColor);
     };
   }
 
-  // On relance la progression si on n'est pas en pause
+  // Relance la progression
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -147,27 +121,22 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
 }
 
 /************************************************************
- * Gérer la pause
+ * Pause / Reprise
  ************************************************************/
 function pauseProgressBar() {
   isPaused = true;
 }
-
-/************************************************************
- * Gérer la reprise
- ************************************************************/
 function resumeProgressBar() {
   isPaused = false;
 }
 
 /************************************************************
  * formatTime
- * Convertit un nombre de secondes en "mm:ss"
  ************************************************************/
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return `${m}:${s < 10 ? "0" + s : s}`;
+  return `${m}:${s < 10 ? "0"+s : s}`;
 }
 
 /************************************************************
@@ -178,8 +147,6 @@ function adjustColor(r, g, b, factor) {
   const nr = Math.round(r * factor);
   const ng = Math.round(g * factor);
   const nb = Math.round(b * factor);
-
-  // Clamp à [0..255]
   return [
     Math.min(255, Math.max(0, nr)),
     Math.min(255, Math.max(0, ng)),
@@ -189,7 +156,6 @@ function adjustColor(r, g, b, factor) {
 
 /************************************************************
  * rgbString([r, g, b])
- * Renvoie "rgb(r, g, b)"
  ************************************************************/
 function rgbString([r, g, b]) {
   return `rgb(${r}, ${g}, ${b})`;
