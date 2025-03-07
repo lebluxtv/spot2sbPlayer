@@ -9,6 +9,8 @@
 let currentInterval = null;
 let timeLeft = 0;
 let isPaused = false;
+
+// Valeur par défaut (en secondes) si data.duration est absent
 let trackDuration = 180;
 
 // 1) Récupération des paramètres d'URL
@@ -22,6 +24,7 @@ if (customWidth) {
   playerElement.style.width = customWidth + 'px';
 }
 
+// Création du client WebSocket (via streamerbot-client)
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -32,13 +35,13 @@ const client = new StreamerbotClient({
 // Pour éviter de recharger 2 fois la même chanson
 let lastSongName = "";
 
-// Écoute unique
+// Écoute unique de l'événement "General.Custom"
 client.on('General.Custom', ({ event, data }) => {
-  // Filtre
+  // Filtre sur widget
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 1) Pause / Play
+  // 1) Gestion pause / play
   if (data.state === 'paused') {
     pauseProgressBar();
     return;
@@ -48,24 +51,25 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // 2) Nouvelle piste
+  // 2) Gestion nouvelle piste
   if (data.songName) {
     // Vérification anti-doublon
-    if (data.songName === lastSongName) return;
+    if (data.songName === lastSongName) {
+      return;
+    }
     lastSongName = data.songName;
 
     const { songName, artistName, albumArtUrl, duration } = data;
-    const trackDuration = duration || 180;
+    trackDuration = duration || 180;
     loadNewTrack(songName, artistName, albumArtUrl, trackDuration);
   }
 });
 
-
 /************************************************************
  * loadNewTrack
  * - Met à jour la pochette, le fond flou
- * - Barre + texte => variations de couleur
- *   (barre plus sombre, titre/artiste/timer plus clairs)
+ * - Gère la barre de progression (départ à 100%, descend)
+ * - Gère la colorimétrie (barColor param ou ColorThief)
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   const bgBlur        = document.getElementById("bg-blur");
@@ -75,7 +79,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Mise à jour de base
+  // Mise à jour de base (fond flou, pochette, textes)
   bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
   trackNameEl.textContent = songName;
@@ -85,17 +89,17 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   timeLeft = durationSec;
   timeRemaining.textContent = formatTime(timeLeft);
 
-  // Stop l'ancien interval
+  // Stop l'ancien interval s'il existait
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
   }
 
-  // Si param "barColor" => on l'utilise
+  // Si param "barColor" => on l’utilise directement
   if (customBarColor) {
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
-    // Sinon, ColorThief + transformations
+    // Sinon, on utilise ColorThief pour calculer la couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous"; // nécessaire si l'image autorise CORS
@@ -105,15 +109,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
       // Couleur dominante brute
       let [r, g, b] = colorThief.getColor(img);
 
-      // 1) On la rend "vibrante" => impose min saturation, max luminosité
-      [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8); 
-      // minSat=0.5 => saturation >= 0.5
-      // maxLight=0.8 => luminosité <= 0.8 => pas de blanc
+      // 1) On la rend "vibrante" => impose minSat=0.5, maxLight=0.8
+      [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
       // 2) On crée des variations en RGB
       //   Barre plus sombre => factor < 1
       const barColorArr    = adjustColor(r, g, b, 0.8);
-      //   Titre beaucoup plus clair => factor > 1
+      //   Titre plus clair => factor > 1
       const titleColorArr  = adjustColor(r, g, b, 1.4);
       //   Artiste & Timer un peu plus clairs
       const artistColorArr = adjustColor(r, g, b, 1.2);
@@ -126,7 +128,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
     };
   }
 
-  // Relance la progression
+  // Relance la progression (1s interval)
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -154,13 +156,12 @@ function resumeProgressBar() {
 }
 
 /************************************************************
- * formatTime(sec)
- * -> "mm:ss"
+ * formatTime(sec) -> "mm:ss"
  ************************************************************/
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return `${m}:${s < 10 ? "0"+s : s}`;
+  return `${m}:${s < 10 ? "0" + s : s}`;
 }
 
 /************************************************************
@@ -202,19 +203,22 @@ function makeVibrant(r, g, b, minSat, maxLight) {
     l = maxLight;
   }
 
-  // Reconversion
   return hslToRgb(h, s, l);
 }
 
 /************************************************************
  * rgbToHsl(r, g, b)
- * -> renvoie [h, s, l] (h, s, l ∈ [0..1])
+ * -> renvoie [h, s, l] ∈ [0..1]
  ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255; g /= 255; b /= 255;
+  r /= 255; 
+  g /= 255; 
+  b /= 255;
+
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
+  let h, s;
+  let l = (max + min) / 2;
 
   if (max === min) {
     // gris neutre
@@ -246,7 +250,7 @@ function rgbToHsl(r, g, b) {
  ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
-    // gris
+    // gris neutre
     const val = Math.round(l * 255);
     return [val, val, val];
   }
