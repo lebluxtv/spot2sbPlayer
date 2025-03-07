@@ -114,9 +114,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
       timeBarFill.style.backgroundColor = rgbString;
 
       // Eventuellement, on applique aussi au texte
-      // trackNameEl.style.color   = rgbString;
-      // artistNameEl.style.color  = rgbString;
-      // timeRemaining.style.color = rgbString;
+       trackNameEl.style.color   = rgbString;
+       artistNameEl.style.color  = rgbString;
+       timeRemaining.style.color = rgbString;
     };
   }
 
