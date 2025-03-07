@@ -41,7 +41,7 @@ body {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.4);
-  pointer-events: none; /* Laisse les clics traverser */
+  pointer-events: none;
 }
 
 /* Contenu (pochette, infos, timer) */
@@ -95,9 +95,9 @@ body {
 .time-bar-fill {
   position: absolute;
   left: 0; top: 0;
-  width: 100%; /* départ plein */
+  width: 100%;
   height: 100%;
-  background: #0f0; /* vert par défaut */
+  background: #0f0; /* Vert par défaut */
   transition: width 0.5s linear;
 }
 
