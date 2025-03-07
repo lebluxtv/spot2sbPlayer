@@ -1,12 +1,25 @@
 /************************************************************
  * script.js
  * Code complet : connexion WebSocket + loadNewTrack
+ * + gestion d'URL params (width, barColor)
+ * + voile sombre pour la lisibilité (géré en CSS)
  ************************************************************/
 
 let currentInterval = null;
 let timeLeft = 0;          // Nombre de secondes restantes
 let isPaused = false;      // Indique si on est en pause
 let trackDuration = 180;   // Valeur par défaut
+
+// 1) Récupération des paramètres dans l'URL
+const urlParams = new URLSearchParams(window.location.search);
+const customWidth = urlParams.get('width');     // ex. ?width=800
+const customBarColor = urlParams.get('barColor'); // ex. &barColor=ff0000
+
+// 2) Appliquer la largeur personnalisée (si présente)
+if (customWidth) {
+  const playerElement = document.querySelector('.player');
+  playerElement.style.width = customWidth + 'px';
+}
 
 // Création du client WebSocket
 const client = new StreamerbotClient({
@@ -24,7 +37,7 @@ client.on('General.Custom', ({ event, data }) => {
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 1) Si on reçoit un message "state"
+  // 1) Si on reçoit un message "state" (lecture/pause)
   if (data.state === 'paused') {
     console.log("Player: paused");
     pauseProgressBar(); 
@@ -67,6 +80,14 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
 
   // Barre pleine
   timeBarFill.style.width = "100%";
+
+  // Si un paramètre "barColor" est défini, on l'applique
+  if (customBarColor) {
+    timeBarFill.style.backgroundColor = '#' + customBarColor;
+  } else {
+    // Sinon, couleur par défaut (vert) (déjà dans le CSS)
+    timeBarFill.style.backgroundColor = '#0f0';
+  }
 
   // On redéfinit le temps restant
   timeLeft = durationSec;
@@ -112,6 +133,7 @@ function resumeProgressBar() {
 
 /************************************************************
  * formatTime
+ * Convertit un nombre de secondes en "mm:ss"
  ************************************************************/
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
