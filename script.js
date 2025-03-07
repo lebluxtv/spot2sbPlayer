@@ -91,10 +91,10 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
       // Barre: plus sombre
       const barColor = adjustColor(r, g, b, 0.8);
       // Titre: beaucoup plus clair
-      const titleColor = adjustColor(r, g, b, 3.4);
+      const titleColor = adjustColor(r, g, b, 5.4);
       // Artiste & timer: un peu plus clair
-      const artistColor = adjustColor(r, g, b, 2.2);
-      const timerColor  = adjustColor(r, g, b, 2.2);
+      const artistColor = adjustColor(r, g, b, 4.2);
+      const timerColor  = adjustColor(r, g, b, 4.2);
 
       timeBarFill.style.backgroundColor = rgbString(barColor);
       trackNameEl.style.color   = rgbString(titleColor);
