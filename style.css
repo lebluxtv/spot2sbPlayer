@@ -92,9 +92,16 @@ body {
   border-radius: 4px;
   overflow: hidden;
 }
+
+/* 
+   Important : 
+   On ancre la barre à droite (right: 0) 
+   pour qu'elle se vide depuis la gauche 
+*/
 .time-bar-fill {
   position: absolute;
-  right: 0; top: 0;
+  right: 0;
+  top: 0;
   width: 100%; /* départ plein */
   height: 100%;
   background: #0f0; /* Vert par défaut */
