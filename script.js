@@ -1,14 +1,13 @@
 /************************************************************
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression, ET la colorimétrie via ColorThief.
- * On utilise un champ "progress" (en secondes) pour recaler
- * la barre sans repartir de 100% à chaque tick.
+ * la barre de progression, ET la colorimétrie via ColorThief,
+ * sans réinitialiser la barre si la chanson ne change pas.
  ************************************************************/
 
-let currentInterval = null; // ID du setInterval
+let currentInterval = null; // pour le setInterval
 let timeLeft = 0;           // temps restant local (en secondes)
-let trackDuration = 180;    // durée totale si pas de payload
+let trackDuration = 180;    // durée totale (par défaut)
 let isPaused = false;
 
 // Paramètres d'URL (ex. ?width=700&barColor=ff0000)
@@ -21,7 +20,7 @@ if (customWidth) {
   document.querySelector('.player').style.width = customWidth + 'px';
 }
 
-// Création du client WebSocket
+// Création du client WebSocket (via streamerbot-client)
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -29,41 +28,42 @@ const client = new StreamerbotClient({
   password: 'streamer.bot'
 });
 
-// Retient le dernier titre affiché pour savoir si on change de piste
-let lastSongName = "";
+// Variables globales pour éviter de recharger la barre
+let lastSongName = "";  // mémorise le titre de la dernière piste gérée
 
 /************************************************************
  * Écoute de "General.Custom"
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
-  if (data?.widget !== 'spot2sbPlayer') return; // on ignore si widget != spot2sbPlayer
+  // Filtre sur widget
+  if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 1) Si "paused" ou "playing"
+  // 1) État lecture/pause
   if (data.state === 'paused') {
     pauseProgressBar();
     return;
   }
-  else if (data.state === 'playing') {
+  if (data.state === 'playing') {
     resumeProgressBar();
     return;
   }
 
-  // 2) Sinon, on a au moins data.songName
+  // 2) Nouvelle info de piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
     const albumArtUrl = data.albumArtUrl || "";
-    const durationSec = data.duration   || 180;  // durée totale
-    const progressSec = data.progress   || 0;    // avancement actuel
+    const durationSec = data.duration   || 180; // durée totale
+    const progressSec = data.progress   || 0;   // avancement actuel
 
-    // Détecte si la piste a changé
+    // a) La piste a changé ?
     if (songName !== lastSongName) {
-      // -> NOUVELLE PISTE
+      // => on ré-initialise
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
     } else {
-      // -> MÊME PISTE
+      // => même piste, on recadre juste si on a avancé/reculé
       syncProgress(progressSec);
     }
   }
@@ -71,8 +71,8 @@ client.on('General.Custom', ({ event, data }) => {
 
 /************************************************************
  * loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec)
- * -> Nouvelle piste : on (ré)initialise la barre, la couleur,
- *    le timer local, etc.
+ * -> Pour une NOUVELLE piste : on réinitialise images, couleurs,
+ *    timer local, etc. sans repartir à 100% si le progress est > 0.
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
   // Sélections
@@ -89,19 +89,16 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   trackNameEl.textContent        = songName;
   artistNameEl.textContent       = artistName;
 
-  // Calcul du temps restant local
+  // Calcule le temps restant local
   trackDuration = durationSec;
-  timeLeft      = Math.max(0, trackDuration - progressSec); // ex: 180 - 42 = 138
-
-  // Affichage du timer
+  timeLeft      = Math.max(0, durationSec - progressSec); // ex: 180 - 42 = 138
   timeRemaining.textContent = formatTime(timeLeft);
 
-  // Barre de progression -> en pourcentage du temps restant
-  const percentPassed = (progressSec / durationSec) * 100;
-  const percentRemaining = 100 - percentPassed; 
-  timeBarFill.style.width = percentRemaining + "%";
+  // Position initiale de la barre en fonction de "progress"
+  const percent = (timeLeft / durationSec) * 100;
+  timeBarFill.style.width = percent + "%";
 
-  // On stoppe l'ancien interval s'il existait
+  // Stop l'ancien interval
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
@@ -122,7 +119,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       // Rendez la couleur plus "vibrante"
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
-      // Variation
+      // Variations
       const barColorArr    = adjustColor(r, g, b, 0.8);
       const titleColorArr  = adjustColor(r, g, b, 1.4);
       const artistColorArr = adjustColor(r, g, b, 1.2);
@@ -135,7 +132,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     };
   }
 
-  // Démarre l'interval local
+  // Lance le timer local (1s)
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -143,8 +140,8 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       if (timeLeft < 0) timeLeft = 0;
 
       timeRemaining.textContent = formatTime(timeLeft);
-      const percent = (timeLeft / trackDuration) * 100;
-      timeBarFill.style.width = percent + "%";
+      const percent2 = (timeLeft / durationSec) * 100;
+      timeBarFill.style.width = percent2 + "%";
 
       if (timeLeft <= 0) {
         clearInterval(currentInterval);
@@ -156,16 +153,15 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
 /************************************************************
  * syncProgress(progressSec)
- * -> La piste n'a pas changé, on recale juste la barre
- *    si on a sauté/retardé la chanson côté Spotify
+ * -> Même piste, on recadre juste la barre si on a sauté
+ *    ou reculé (ex. progressSec = 127 => plus tard).
  ************************************************************/
 function syncProgress(progressSec) {
   const newTimeLeft = Math.max(0, trackDuration - progressSec);
-  // S'il y a un gros écart, on recadre
   const diff = Math.abs(newTimeLeft - timeLeft);
-
+  // On ne recadre que si l'écart est significatif (ex. > 1s)
   if (diff > 1) {
-    console.log(`syncProgress -> recadrage de ${diff}s`);
+    console.log("syncProgress -> recadrage:", diff, "secondes");
     timeLeft = newTimeLeft;
 
     const timeBarFill   = document.getElementById("time-bar-fill");
@@ -188,7 +184,7 @@ function resumeProgressBar() {
 }
 
 /************************************************************
- * Utilitaires
+ * formatTime(sec) -> "mm:ss"
  ************************************************************/
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
@@ -196,6 +192,10 @@ function formatTime(sec) {
   return `${m}:${s < 10 ? "0"+s : s}`;
 }
 
+/************************************************************
+ * adjustColor(r, g, b, factor)
+ * factor > 1 => éclaircit, factor < 1 => assombrit
+ ************************************************************/
 function adjustColor(r, g, b, factor) {
   const nr = Math.round(r * factor);
   const ng = Math.round(g * factor);
@@ -207,10 +207,18 @@ function adjustColor(r, g, b, factor) {
   ];
 }
 
+/************************************************************
+ * rgbString([r, g, b])
+ ************************************************************/
 function rgbString([r, g, b]) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+/************************************************************
+ * makeVibrant(r, g, b, minSat, maxLight)
+ * -> Convertit en HSL, force S >= minSat, L <= maxLight
+ * -> Retourne [R, G, B] vibrants
+ ************************************************************/
 function makeVibrant(r, g, b, minSat, maxLight) {
   let [h, s, l] = rgbToHsl(r, g, b);
   if (s < minSat) s = minSat;
@@ -218,15 +226,21 @@ function makeVibrant(r, g, b, minSat, maxLight) {
   return hslToRgb(h, s, l);
 }
 
+/************************************************************
+ * rgbToHsl(r, g, b) -> [h, s, l]
+ ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255; g /= 255; b /= 255;
+  r /= 255; 
+  g /= 255; 
+  b /= 255;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h, s;
-  let l = (max + min) / 2;
+  let l = (max + min)/2;
 
   if (max === min) {
-    h = 0; s = 0;
+    h = 0; 
+    s = 0;
   } else {
     const diff = max - min;
     s = (l > 0.5)
@@ -242,26 +256,28 @@ function rgbToHsl(r, g, b) {
   return [h, s, l];
 }
 
+/************************************************************
+ * hslToRgb(h, s, l) -> [r, g, b]
+ ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
-    const val = Math.round(l * 255);
+    const val = Math.round(l*255);
     return [val, val, val];
   }
   const hue2rgb = (p, q, t) => {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q-p)*6*t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q-p)*(2/3 - t)*6;
+    if (t<0) t+=1;
+    if (t>1) t-=1;
+    if (t<1/6) return p+(q-p)*6*t;
+    if (t<1/2) return q;
+    if (t<2/3) return p+(q-p)*(2/3 - t)*6;
     return p;
   };
 
-  const q = (l < 0.5) ? (l*(1+s)) : (l + s - l*s);
+  const q = (l<0.5) ? (l*(1+s)) : (l + s - l*s);
   const p = 2*l - q;
-
-  const r = hue2rgb(p, q, h + 1/3);
+  const r = hue2rgb(p, q, h+1/3);
   const g = hue2rgb(p, q, h);
-  const b = hue2rgb(p, q, h - 1/3);
+  const b = hue2rgb(p, q, h-1/3);
   return [
     Math.round(r*255),
     Math.round(g*255),
