@@ -22,45 +22,44 @@ if (customWidth) {
   playerElement.style.width = customWidth + 'px';
 }
 
-// Création du client WebSocket (via streamerbot-client)
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
   endpoint: '/',
   password: 'streamer.bot'
 });
-let lastSongName = "";
-client.on('General.Custom', ({ data }) => {
-  if (data.widget !== "spot2sbPlayer") return;
-  if (data.songName === lastSongName) return;
 
-  loadNewTrack(...);
-  lastSongName = data.songName;
-});
-/**
- * Écoute de l'événement "General.Custom"
- * -> Si widget = "spot2sbPlayer", on traite le message
- */
+// Pour éviter de recharger 2 fois la même chanson
+let lastSongName = "";
+
+// Écoute unique
 client.on('General.Custom', ({ event, data }) => {
+  // Filtre
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 1) Etat lecture/pause
+  // 1) Pause / Play
   if (data.state === 'paused') {
     pauseProgressBar();
     return;
-  } else if (data.state === 'playing') {
+  } 
+  else if (data.state === 'playing') {
     resumeProgressBar();
     return;
   }
 
   // 2) Nouvelle piste
   if (data.songName) {
+    // Vérification anti-doublon
+    if (data.songName === lastSongName) return;
+    lastSongName = data.songName;
+
     const { songName, artistName, albumArtUrl, duration } = data;
-    trackDuration = duration || 180;
+    const trackDuration = duration || 180;
     loadNewTrack(songName, artistName, albumArtUrl, trackDuration);
   }
 });
+
 
 /************************************************************
  * loadNewTrack
