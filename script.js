@@ -1,7 +1,8 @@
 /************************************************************
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression, ET la colorimétrie via ColorThief.
+ * la barre de progression, ET la colorimétrie via ColorThief
+ * avec variations (barre plus sombre, titre/artiste/timer plus clairs).
  ************************************************************/
 
 let currentInterval = null;
@@ -63,6 +64,7 @@ client.on('General.Custom', ({ event, data }) => {
  * - Met à jour la pochette, le fond flou
  * - Gère la barre de progression
  * - Si barColor n'est pas défini, on calcule une couleur via ColorThief
+ *   puis on applique des variations (barre plus sombre, textes plus clairs).
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
   const bgBlur        = document.getElementById("bg-blur");
@@ -93,30 +95,37 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
     currentInterval = null;
   }
 
-  // Si on a un paramètre "barColor" => on l'utilise
+  // Si on a un paramètre "barColor" => on l'utilise directement
   if (customBarColor) {
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
     // Sinon, on tente de récupérer la couleur dominante via ColorThief
-    // - Il faut que l'image autorise le cross-origin
+    // (l'image doit autoriser le cross-origin)
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous"; 
     img.src = albumArtUrl;
 
     img.onload = function() {
-      // Extraire la couleur dominante
-      const color = colorThief.getColor(img); // [r, g, b]
+      // Extraire la couleur dominante => [r, g, b]
+      const color = colorThief.getColor(img);
       const [r, g, b] = color;
-      const rgbString = `rgb(${r}, ${g}, ${b})`;
 
-      // On applique cette couleur à la barre
-      timeBarFill.style.backgroundColor = rgbString;
+      // On crée des variations
+      // Bar: plus sombre (factor < 1)
+      const barColor       = adjustColor(r, g, b, 0.8);
+      // Titre: beaucoup plus clair (factor > 1)
+      const titleColor     = adjustColor(r, g, b, 1.4);
+      // Artiste & timer: un peu plus clair
+      const artistColor    = adjustColor(r, g, b, 1.2);
+      const timerColor     = adjustColor(r, g, b, 1.2);
 
-      // Eventuellement, on applique aussi au texte
-       trackNameEl.style.color   = rgbString;
-       artistNameEl.style.color  = rgbString;
-       timeRemaining.style.color = rgbString;
+      // Applique la couleur
+      timeBarFill.style.backgroundColor = rgbString(barColor);
+
+      trackNameEl.style.color   = rgbString(titleColor);
+      artistNameEl.style.color  = rgbString(artistColor);
+      timeRemaining.style.color = rgbString(timerColor);
     };
   }
 
@@ -130,7 +139,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec) {
         clearInterval(currentInterval);
         currentInterval = null;
       }
-
       timeRemaining.textContent = formatTime(timeLeft);
       const percent = (timeLeft / durationSec) * 100;
       timeBarFill.style.width = percent + "%";
@@ -160,4 +168,29 @@ function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${s < 10 ? "0" + s : s}`;
+}
+
+/************************************************************
+ * adjustColor(r, g, b, factor)
+ * factor > 1 => éclaircit, factor < 1 => assombrit
+ ************************************************************/
+function adjustColor(r, g, b, factor) {
+  const nr = Math.round(r * factor);
+  const ng = Math.round(g * factor);
+  const nb = Math.round(b * factor);
+
+  // Clamp à [0..255]
+  return [
+    Math.min(255, Math.max(0, nr)),
+    Math.min(255, Math.max(0, ng)),
+    Math.min(255, Math.max(0, nb))
+  ];
+}
+
+/************************************************************
+ * rgbString([r, g, b])
+ * Renvoie "rgb(r, g, b)"
+ ************************************************************/
+function rgbString([r, g, b]) {
+  return `rgb(${r}, ${g}, ${b})`;
 }
