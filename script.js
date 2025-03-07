@@ -3,6 +3,7 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, ET la colorimétrie via ColorThief,
  * sans réinitialiser la barre si la chanson ne change pas.
+ * On tient compte de data.state pour figer la barre en pause.
  ************************************************************/
 
 let currentInterval = null; // pour le setInterval
@@ -39,14 +40,15 @@ client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
+  // On récupère l'état => "playing" ou "paused"
+  const stateValue = data.state || "paused"; // par défaut, on met "paused"
+
   // 1) État lecture/pause
-  if (data.state === 'paused') {
+  if (stateValue === 'paused') {
     pauseProgressBar();
-    return;
-  }
-  if (data.state === 'playing') {
+  } else {
+    // stateValue === 'playing'
     resumeProgressBar();
-    return;
   }
 
   // 2) Nouvelle info de piste
@@ -91,7 +93,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
   // Calcule la durée et le temps restant
   trackDuration = durationSec;
-  timeLeft      = Math.max(0, durationSec - progressSec); 
+  timeLeft      = Math.max(0, durationSec - progressSec);
   // Ex: si la chanson dure 180s et on est déjà à 42s, timeLeft=138
 
   // Mise à jour de l'affichage
@@ -154,13 +156,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
  * syncProgress(progressSec)
  * -> La chanson n'a pas changé, mais on a reçu un nouveau progress
  *    (l'utilisateur a avancé/reculé dans la musique). On recadre
- *    la barre et le timer sans tout réinitialiser.
+ *    la barre et le timer sans tout ré-initialiser.
  ************************************************************/
 function syncProgress(progressSec) {
-  // Si la chanson dure 180s et progress=60, alors timeLeft=120
+  // Si la chanson dure trackDuration=180 et progress=60, alors timeLeft=120
   const newTimeLeft = Math.max(0, trackDuration - progressSec);
 
-  // On ne redémarre pas tout, on recadre juste l'écart
   const diff = Math.abs(newTimeLeft - timeLeft);
   // S'il y a un gros écart, on recadre brutalement
   if (diff > 2) {
@@ -276,7 +277,7 @@ function rgbToHsl(r, g, b) {
  ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
-    // gris
+    // gris neutre
     const val = Math.round(l * 255);
     return [val, val, val];
   }
