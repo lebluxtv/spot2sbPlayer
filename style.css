@@ -52,10 +52,12 @@ body {
   align-items: center; /* Centre verticalement */
   height: 100%;
   padding: 0 10px;
+  min-width: 0; /* important pour permettre au texte de déborder si nécessaire */
 }
 
+/* Pochette album : ne rétrécit pas */
 .cover-art {
-  flex-shrink: 0; /* ne pas rétrécir */
+  flex-shrink: 0; /* empêche la réduction */
   width: 60px;
   height: 60px;
   background-size: cover;
@@ -63,31 +65,31 @@ body {
   margin-right: 10px;
 }
 
+/* Bloc texte + barre */
 .info-bar {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-width: 0; /* indispensable pour que le texte puisse être masqué/overflow */
+  flex: 1 1 auto; /* prend la place restante */
+  min-width: 0;   /* indispensable en flexbox pour overflow hidden */
 }
 
+/* Titre : on le fait défiler seulement si nécessaire */
 .track-name {
   position: relative;
-  overflow: hidden;
-  white-space: nowrap;
+  overflow: hidden;     /* masque le texte trop long */
+  white-space: nowrap;  /* pas de retour à la ligne */
   width: 100%;
-  min-width: 0; /* évite que le texte force l’élargissement */
   height: 1.4em;
   margin-bottom: 4px;
 }
 
-/* Le span qui va potentiellement défiler */
+/* Le span qui peut défiler */
 .track-name span {
   display: inline-block;
-  padding-left: 100%;       
-  animation: marquee 10s linear infinite;
+  /* Par défaut, on enlève l’animation ; on l’ajoutera en JS si besoin */
+  animation: none;
 }
 
-/* Animation "marquee" de base */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
@@ -125,7 +127,7 @@ body {
   left: 0; 
   top: 0;
   height: 100%;
-  width: 100%; /* départ à 100% */
+  width: 100%; /* on la réduira via JS */
   background: #0f0;
   transition: width 0.5s linear;
 }
