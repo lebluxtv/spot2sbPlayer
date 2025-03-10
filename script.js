@@ -7,6 +7,8 @@
  * Ajout : 
  *  - Si ?album=disc => pochette ronde et rotation "vinyle".
  *  - Si ?opacity=50 => background blur a 0.5 d’opacité (par ex).
+ *  - Si ?color=ff0000 => applique cette couleur partout 
+ *    (barre, titre, artiste, timer), bypassant ColorThief.
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -19,13 +21,13 @@ let isPaused = false;
 
 /**
  * Récupération des paramètres d'URL
- * ex: ?width=700&barColor=ff0000&album=disc&opacity=50
+ * ex: ?width=700&color=ff0000&album=disc&opacity=50
  */
 const urlParams = new URLSearchParams(window.location.search);
-const customWidth    = urlParams.get('width');
-const customBarColor = urlParams.get('barColor');
-const albumParam     = urlParams.get('album');   // "disc" => rotation circulaire
-const opacityParam   = urlParams.get('opacity'); // e.g. "50" => 0.5
+const customWidth  = urlParams.get('width');
+const customColor  = urlParams.get('color');  // NEW param => apply to bar + texts
+const albumParam   = urlParams.get('album');  // "disc" => rotation circulaire
+const opacityParam = urlParams.get('opacity'); // e.g. "50" => 0.5
 
 /** Ajuste la largeur si demandée **/
 if (customWidth) {
@@ -44,7 +46,7 @@ if (opacityParam) {
 
 /** Création du client WebSocket (via streamerbot-client) **/
 const client = new StreamerbotClient({
-  host: '127.0.0.1',  // à adapter à votre config
+  host: '127.0.0.1',  // à adapter
   port: 8080,
   endpoint: '/',
   password: 'streamer.bot'
@@ -61,7 +63,7 @@ client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 2) Si noSong = true => on masque la div .player et on s'arrête
+  // 2) Si noSong = true => on masque la div .player
   if (data.noSong === true) {
     document.querySelector('.player').style.display = 'none';
     return;
@@ -69,7 +71,7 @@ client.on('General.Custom', ({ event, data }) => {
     document.querySelector('.player').style.display = 'block';
   }
 
-  // 3) Gérer état lecture/pause
+  // 3) État lecture/pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -101,7 +103,7 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  * - Met à jour la pochette, le fond flou
  * - Gère la barre de progression (100% -> 0%)
- * - Gère la colorimétrie (barColor param ou ColorThief)
+ * - Gère la colorimétrie (si customColor => on applique direct)
  * - Active/désactive le défilement du titre si besoin
  * - Ajoute des animations "slide in" pour la nouvelle piste
  ************************************************************/
@@ -126,11 +128,11 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     coverArt.classList.remove('disc-mode');
   }
 
-  // Titre et artiste
+  // Titre + artiste
   trackNameSpan.textContent = songName;
   artistNameEl.textContent  = artistName;
 
-  // Stocker la durée, et le temps déjà écoulé
+  // Stocker la durée et le temps déjà écoulé
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
 
@@ -143,12 +145,20 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     currentInterval = null;
   }
 
-  // Couleur de la barre
-  if (customBarColor) {
-    // On a un paramètre barColor => on l'applique directement
-    timeBarFill.style.backgroundColor = '#' + customBarColor;
+  /** 
+   * Couleur de la barre + textes
+   * => Si customColor est fourni => on applique cette couleur partout
+   * => Sinon => on utilise ColorThief
+   */
+  if (customColor) {
+    // Applique la même couleur à la barre + titre + artiste + timer
+    const colorHex = "#" + customColor;
+    timeBarFill.style.backgroundColor = colorHex;
+    trackNameSpan.style.color        = colorHex;
+    artistNameEl.style.color         = colorHex;
+    timeRemaining.style.color        = colorHex;
   } else {
-    // Sinon, on utilise ColorThief pour déterminer une couleur
+    // Sinon => ColorThief
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -157,17 +167,17 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     img.onload = function() {
       let [r, g, b] = colorThief.getColor(img);
 
-      // Rendez la couleur plus "vibrante"
+      // Rendez la couleur plus "vibrante" => impose minSat=0.5, maxLight=0.8
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
       // On s’assure que la luminosité >= 0.3
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
 
       // Variations
-      const barColorArr    = adjustColor(r, g, b, 0.8); // pour la barre
-      const titleColorArr  = adjustColor(r, g, b, 1.4); // pour le titre
-      const artistColorArr = adjustColor(r, g, b, 1.2); // pour l’artiste
-      const timerColorArr  = adjustColor(r, g, b, 1.2); // pour le timer
+      const barColorArr    = adjustColor(r, g, b, 0.8);
+      const titleColorArr  = adjustColor(r, g, b, 1.4);
+      const artistColorArr = adjustColor(r, g, b, 1.2);
+      const timerColorArr  = adjustColor(r, g, b, 1.2);
 
       timeBarFill.style.backgroundColor = rgbString(barColorArr);
       trackNameSpan.style.color        = rgbString(titleColorArr);
@@ -176,7 +186,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     };
   }
 
-  // Lancement de l'interval pour décrémenter la barre (100% -> 0%)
+  // Lancement de l'interval => décrémenter la barre (100% -> 0%)
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -196,12 +206,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     setupScrollingTitle();
   });
 
-  // Animations "slide in" pour la nouvelle piste
-  animateElement(coverArt,     'slide-in-left');  // pochette
-  animateElement(artistNameEl, 'slide-in-top');   // artiste
-  animateElement(trackNameSpan,'slide-in-top');   // titre
-  animateElement(timeBarBg,    'slide-in-right'); // barre
-  animateElement(timeRemaining,'slide-in-right'); // timer
+  // Animations "slide in" (nouvelle piste)
+  animateElement(coverArt,     'slide-in-left');
+  animateElement(artistNameEl, 'slide-in-top');
+  animateElement(trackNameSpan,'slide-in-top');
+  animateElement(timeBarBg,    'slide-in-right');
+  animateElement(timeRemaining,'slide-in-right');
 }
 
 /************************************************************
@@ -241,7 +251,7 @@ function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
   const span      = document.getElementById('track-name');
 
-  // On retire toute animation par défaut
+  // Retire toute animation
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
 
@@ -373,15 +383,9 @@ function rgbToHsl(r, g, b) {
       : diff / (max + min);
 
     switch (max) {
-      case r:
-        h = (g - b) / diff + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / diff + 2;
-        break;
-      case b:
-        h = (r - g) / diff + 4;
-        break;
+      case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / diff + 2; break;
+      case b: h = (r - g) / diff + 4; break;
     }
     h /= 6;
   }
