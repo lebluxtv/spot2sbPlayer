@@ -1,9 +1,8 @@
 /************************************************************
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression (commence à 100%, se vide jusqu'à 0%),
- * la colorimétrie via ColorThief, le titre défilant (seulement
- * si trop long), ET les animations "slide in" pour nouvelle piste.
+ * la barre de progression (100% -> 0%), la colorimétrie,
+ * le titre défilant conditionnel, et les animations "slide in".
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -82,7 +81,7 @@ client.on('General.Custom', ({ event, data }) => {
 /************************************************************
  * loadNewTrack
  * - Met à jour la pochette, le fond flou
- * - Gère la barre de progression (part de 100% -> 0%)
+ * - Gère la barre de progression (100% -> 0%)
  * - Gère la colorimétrie (barColor param ou ColorThief)
  * - Active/désactive le défilement du titre si besoin
  * - Ajoute des animations "slide in" pour la nouvelle piste
@@ -207,29 +206,18 @@ function updateBarAndTimer() {
 }
 
 /************************************************************
- * Pause / Reprise
- ************************************************************/
-function pauseProgressBar() {
-  isPaused = true;
-}
-function resumeProgressBar() {
-  isPaused = false;
-}
-
-/************************************************************
  * setupScrollingTitle
  * -> Active ou non l'animation "marquee" en fonction
  *    de la place disponible vs. la largeur du texte
  ************************************************************/
 function setupScrollingTitle() {
-  const container = document.querySelector('.track-name'); // le div track-name
+  const container = document.querySelector('.track-name');
   const span      = document.getElementById('track-name');
 
   // Désactive l'animation par défaut
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
 
-  // Forcer un reflow ou attendre la frame suivante
   requestAnimationFrame(() => {
     const containerWidth = container.offsetWidth;
     const textWidth      = span.scrollWidth;
@@ -239,7 +227,7 @@ function setupScrollingTitle() {
       span.style.paddingLeft = containerWidth + 'px';
       span.style.animation = 'marquee 10s linear infinite';
     } else {
-      // On le désactive (pas besoin de défiler)
+      // On le désactive
       span.style.animation = 'none';
       span.style.paddingLeft = '0';
     }
@@ -252,12 +240,11 @@ function setupScrollingTitle() {
  *    après la fin de l'animation (pour rejouer plus tard)
  ************************************************************/
 function animateElement(element, animationClass) {
-  // Pour rejouer l'animation à chaque nouvelle piste,
-  // on retire la classe si elle existe déjà
+  // Retire d'abord la classe si elle existe
   element.classList.remove(animationClass);
 
   // Force le reflow
-  void element.offsetWidth; 
+  void element.offsetWidth;
 
   // Ajoute la classe
   element.classList.add(animationClass);
@@ -266,6 +253,16 @@ function animateElement(element, animationClass) {
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
   }, { once: true });
+}
+
+/************************************************************
+ * Pause / Reprise
+ ************************************************************/
+function pauseProgressBar() {
+  isPaused = true;
+}
+function resumeProgressBar() {
+  isPaused = false;
 }
 
 /************************************************************
@@ -388,4 +385,3 @@ function hslToRgb(h, s, l) {
     Math.round(b * 255)
   ];
 }
-
