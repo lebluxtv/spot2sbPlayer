@@ -49,28 +49,38 @@ body {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: center; /* Centre verticalement */
-  height: 100%;
+  /* On aligne en stretch pour que la pochette prenne
+     toute la hauteur dispo, du haut du texte jusqu’à la barre */
+  align-items: stretch;
+  height: 100%;       /* la hauteur totale du player */
   padding: 0 10px;
 }
 
+
 /* Pochette album */
 .cover-art {
-  flex-shrink: 0;
-  width: 60px;
-  height: 60px;
+  /* On impose plutôt un ratio 1/1 pour qu'elle reste carrée
+     et s'aligne verticalement */
+  aspect-ratio: 1 / 1;
   background-size: cover;
   background-position: center;
   margin-right: 10px;
+  /* Pour éviter que la pochette ne rapetisse trop,
+     on peut forcer une largeur mini, ex: min-width: 60px; */
+  min-width: 60px;
+  /* Par défaut, flex items peuvent s’agrandir/rapetisser,
+     on peut figer la pochette en "auto" :
+  */
+  flex: 0 0 auto;
 }
 
 /* Bloc texte + barre */
 .info-bar {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  flex: 1;
-  min-width: 0;
+  justify-content: center; 
+  flex: 1; /* prend toute la place horizontalement */
+  min-width: 0; /* permet au texte de s'ajuster si trop long */
 }
 
 /* Titre: on le fait défiler si trop long */
@@ -105,8 +115,11 @@ body {
 /* La rangée contenant la barre + timer */
 .time-row {
   position: relative;
-  height: 24px; /* assez pour la barre + le timer */
   margin-top: 6px;
+  /* Optionnel: si vous voulez “pousser” la barre en bas, 
+     on peut jouer sur "justify-content: space-between" 
+     dans .info-bar, et faire en sorte que .time-row 
+     soit le dernier bloc. */
 }
 
 /* Barre de progression */
