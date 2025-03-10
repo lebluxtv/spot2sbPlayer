@@ -18,9 +18,10 @@ body {
 /* Container principal */
 .player {
   position: relative;
-  width: 600px; /* Valeur par défaut */
+  width: 600px;
   height: 100px;
-  overflow: hidden;
+  overflow: hidden; /* ensures the background blur is also clipped */
+  border-radius: 10px; /* or however many px you like */
 }
 
 /* Arrière-plan flou / étiré */
