@@ -1,12 +1,8 @@
 /************************************************************
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression (de 0% à 100%), ET la colorimétrie
- * via ColorThief, sans réinitialiser la barre si la chanson
- * ne change pas. On tient compte de data.state pour figer la
- * barre en pause, et data.noSong pour masquer le player.
- * 
- * ICI, la barre se remplit de DROITE à GAUCHE (right: 0).
+ * la barre de progression (commence à 100%, se vide jusqu'à 0%)
+ * + colorimétrie via ColorThief, + titre défilant si trop long.
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -22,14 +18,14 @@ const urlParams = new URLSearchParams(window.location.search);
 const customWidth    = urlParams.get('width');
 const customBarColor = urlParams.get('barColor');
 
-// Ajuste la largeur si demandée
+/** Ajuste la largeur si demandée **/
 if (customWidth) {
   document.querySelector('.player').style.width = customWidth + 'px';
 }
 
 /** Création du client WebSocket (via streamerbot-client) **/
 const client = new StreamerbotClient({
-  host: '127.0.0.1',  // à adapter selon votre config
+  host: '127.0.0.1',  // à adapter
   port: 8080,
   endpoint: '/',
   password: 'streamer.bot'
@@ -54,7 +50,7 @@ client.on('General.Custom', ({ event, data }) => {
     document.querySelector('.player').style.display = 'block';
   }
 
-  // 3) Gérer état lecture/pause (ex. data.state = "playing" ou "paused")
+  // 3) Gérer état lecture/pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -63,7 +59,7 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // 4) Nouvelle info de piste (songName, artistName, albumArtUrl, duration, progress)
+  // 4) Nouvelle info de piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -85,14 +81,14 @@ client.on('General.Custom', ({ event, data }) => {
 /************************************************************
  * loadNewTrack
  * - Met à jour la pochette, le fond flou
- * - Gère la barre de progression (en partant de "progressSec")
+ * - Gère la barre de progression (part de 100% -> 0%)
  * - Gère la colorimétrie (barColor param ou ColorThief)
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
   // Sélections DOM
   const bgBlur        = document.getElementById("bg-blur");
   const coverArt      = document.getElementById("cover-art");
-  const trackNameEl   = document.getElementById("track-name");
+  const trackNameSpan = document.getElementById("track-name");  // c'est le <span>
   const artistNameEl  = document.getElementById("artist-name");
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
@@ -100,8 +96,10 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   // Mise à jour de base (fond flou, pochette, textes)
   bgBlur.style.backgroundImage   = `url('${albumArtUrl}')`;
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
-  trackNameEl.textContent        = songName;
-  artistNameEl.textContent       = artistName;
+
+  // Pour le titre, on place tout dans trackNameSpan (ça défilera en CSS)
+  trackNameSpan.textContent = songName;
+  artistNameEl.textContent  = artistName;
 
   // Stocker la durée, et le temps déjà écoulé
   trackDuration = durationSec;
@@ -116,10 +114,11 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     currentInterval = null;
   }
 
-  // Couleur de la barre (barColor param ou ColorThief)
+  // Couleur de la barre
   if (customBarColor) {
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
+    // On utilise ColorThief si l'image autorise le crossOrigin
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -138,13 +137,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       const timerColorArr  = adjustColor(r, g, b, 1.2); // timer
 
       timeBarFill.style.backgroundColor = rgbString(barColorArr);
-      trackNameEl.style.color          = rgbString(titleColorArr);
+      trackNameSpan.style.color        = rgbString(titleColorArr);
       artistNameEl.style.color         = rgbString(artistColorArr);
       timeRemaining.style.color        = rgbString(timerColorArr);
     };
   }
 
-  // Lancement de l'interval pour incrémenter timeSpent (barre 0% -> 100% en occupant la place depuis la DROITE)
+  // Lancement de l'interval pour décrémenter la barre (100% -> 0%)
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -175,17 +174,15 @@ function syncProgress(progressSec) {
 
 /************************************************************
  * updateBarAndTimer
- * -> Met à jour la barre (de 0% à 100%, partant de la DROITE)
- *    et le timer (temps restant).
+ * -> Barre de 100% -> 0% (elle se vide).
  ************************************************************/
 function updateBarAndTimer() {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Barre: ratio = timeSpent / trackDuration
-  // On veut un "pct" qui va de 0 à 100.
-  // Comme la barre est positionnée "right: 0", un width=100% la remplit entièrement depuis la droite.
-  const pct = (timeSpent / trackDuration) * 100;
+  // timeSpent = 0 => barre = 100%
+  // timeSpent = trackDuration => barre = 0%
+  const pct = 100 - (timeSpent / trackDuration * 100);
   timeBarFill.style.width = pct + "%";
 
   // Timer: on affiche "le temps restant"
