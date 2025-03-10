@@ -3,6 +3,8 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression (100% -> 0%), la colorimétrie,
  * le titre défilant conditionnel, et les animations "slide in".
+ * 
+ * Ajout : Si ?album=disc => pochette ronde et rotation "vinyle".
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -13,10 +15,11 @@ let timeSpent = 0;         // secondes déjà écoulées
 let trackDuration = 180;   // durée totale (par défaut)
 let isPaused = false;
 
-/** Récupération des paramètres d'URL (ex: ?width=700&barColor=ff0000) **/
+/** Récupération des paramètres d'URL (ex: ?width=700&barColor=ff0000&album=disc) **/
 const urlParams = new URLSearchParams(window.location.search);
 const customWidth    = urlParams.get('width');
 const customBarColor = urlParams.get('barColor');
+const albumParam     = urlParams.get('album'); // "disc" => rotation circulaire
 
 /** Ajuste la largeur si demandée **/
 if (customWidth) {
@@ -100,6 +103,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   bgBlur.style.backgroundImage   = `url('${albumArtUrl}')`;
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
 
+  // Si l’utilisateur a mis ?album=disc, on applique la classe .disc-mode
+  if (albumParam === 'disc') {
+    coverArt.classList.add('disc-mode');
+  } else {
+    coverArt.classList.remove('disc-mode');
+  }
+
   // Titre et artiste
   trackNameSpan.textContent = songName;
   artistNameEl.textContent  = artistName;
@@ -130,15 +140,14 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     img.onload = function() {
       let [r, g, b] = colorThief.getColor(img);
 
-      // Étape 1 : Forcer saturation >= 0.5 et luminosité <= 0.8
+      // Rendez la couleur plus "vibrante" => impose minSat=0.5, maxLight=0.8
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
-      // Étape 2 : S’assurer qu’on n’est pas trop sombre (ex. l >= 0.3)
-      //           => on applique ensureMinimumLightness
+      // On s’assure que la luminosité >= 0.3 par ex.
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
 
       // Variations
-      const barColorArr    = adjustColor(r, g, b, 0.8); 
+      const barColorArr    = adjustColor(r, g, b, 0.8);
       const titleColorArr  = adjustColor(r, g, b, 1.4);
       const artistColorArr = adjustColor(r, g, b, 1.2);
       const timerColorArr  = adjustColor(r, g, b, 1.2);
