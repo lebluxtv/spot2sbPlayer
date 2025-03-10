@@ -69,8 +69,8 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex: 1;             /* Titre + barre s'étirent dans l'espace restant */
-  min-width: 0;        /* Autorise le titre à déborder si besoin */
+  flex: 1;
+  min-width: 0; /* Autorise le titre à rogner si trop long */
 }
 
 /* Titre: on le fait défiler si trop long */
@@ -90,7 +90,6 @@ body {
   padding-left: 0;
 }
 
-/* Animation "marquee" qu'on activera en JS */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
@@ -128,7 +127,7 @@ body {
   left: 0; 
   top: 0;
   height: 100%;
-  width: 100%; /* au départ, on la mettra à 100% */
+  width: 100%; /* départ: 100% -> 0% */
   background: #0f0;
   transition: width 0.5s linear;
 }
@@ -142,4 +141,49 @@ body {
   font-size: 0.9rem;
   font-weight: bold;
   pointer-events: none;
+}
+
+/**************************************************************
+ * Animations "slide in" (arrivée)
+ **************************************************************/
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slideInTop {
+  from {
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Classes utilitaires qu'on applique en JS */
+.slide-in-left {
+  animation: slideInLeft 0.5s forwards;
+}
+.slide-in-right {
+  animation: slideInRight 0.5s forwards;
+}
+.slide-in-top {
+  animation: slideInTop 0.5s forwards;
 }
