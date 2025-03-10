@@ -86,8 +86,8 @@ body {
 /* Conteneur "time-row" plus grand pour loger barre + timer */
 .time-row {
   position: relative;
-  margin-top: 6px;
-  height: 24px; /* On réserve 24px de hauteur (ou plus) */
+  height: 24px; /* Assez grand pour la barre + le timer */
+  margin-top: 6px; 
 }
 
 /* La barre est calée en bas du conteneur */
@@ -107,22 +107,18 @@ body {
   position: absolute;
   left: 0; 
   top: 0;
-  width: 100%; /* départ plein, réduit en JS */
+ width: 0%; /* on part de 0 pour un “remplissage” progressif */
   height: 100%;
   background: #0f0;
   transition: width 0.5s linear;
 }
 
-/* Le timer est positionné "au-dessus" : on le place en haut à droite, 
-   ou en bas à droite avec un offset. 
-   Ici on choisit en haut à droite */
+/* Le timer, en position absolue, tout en haut à droite */
 .time-remaining {
   position: absolute;
+  top: 0;    /* ou top: -2px si besoin de remonter un peu */
   right: 8px;
-  top: 0;         /* timer en haut */
-  /* ou bottom: 12px si vous voulez l'afficher au-dessus de la barre 
-     mais collé en bas du conteneur */
-  z-index: 2;     /* pour qu'il passe devant la barre si nécessaire */
+  z-index: 2;
   font-size: 0.9rem;
   font-weight: bold;
   pointer-events: none;
