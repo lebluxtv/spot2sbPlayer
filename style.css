@@ -18,10 +18,10 @@ body {
 /* Container principal */
 .player {
   position: relative;
-  width: 600px;
+  width: 600px;      /* Valeur par défaut (override via ?width=###) */
   height: 100px;
-  overflow: hidden; /* ensures the background blur is also clipped */
-  border-radius: 10px; /* or however many px you like */
+  overflow: hidden;  /* ensures the background blur is also clipped */
+  border-radius: 10px; /* corners are rounded */
 }
 
 /* Arrière-plan flou / étiré */
@@ -32,7 +32,7 @@ body {
   background-position: center;
   filter: blur(8px);
   transform: scale(1.2);
-  opacity: 0.6; /* Default, overridden by JS if ?opacity=XX is specified */
+  opacity: 0.6; /* default, can be overridden via ?opacity=xx */
   z-index: 1;
 }
 
@@ -67,10 +67,10 @@ body {
   flex: 0 0 auto; /* pochette fixe */
 }
 
-/* Si l'utilisateur demande album=disc, on applique .disc-mode => rendu circulaire + rotation */
+/* Si l'utilisateur demande album=disc => rendu circulaire + rotation vinyle */
 .disc-mode {
   border-radius: 50%;
-  animation: disc-spin 6s linear infinite;
+  animation: disc-spin 6s linear infinite; /* durée de rotation ajustable */
 }
 
 @keyframes disc-spin {
