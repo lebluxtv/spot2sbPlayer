@@ -10,25 +10,25 @@
     <!-- Arrière-plan flou -->
     <div class="bg-blur" id="bg-blur"></div>
 
-    <div class="player-content">
-      <!-- Pochette album -->
-      <div class="cover-art" id="cover-art"></div>
+   <div class="player-content">
+  <!-- Pochette album -->
+  <div class="cover-art" id="cover-art"></div>
 
-      <!-- Zone texte + barre -->
-      <div class="info-bar">
-        <div class="track-name" id="track-name">Titre</div>
-        <div class="artist-name" id="artist-name">Artiste</div>
+  <!-- Zone texte + barre -->
+  <div class="info-bar">
+    <div class="track-name" id="track-name">Titre</div>
+    <div class="artist-name" id="artist-name">Artiste</div>
 
-        <!-- Barre de progression -->
-        <div class="time-bar-bg">
-          <div class="time-bar-fill" id="time-bar-fill"></div>
-        </div>
+    <!-- Conteneur "time-row" qui inclut la barre + timer absolu -->
+    <div class="time-row">
+      <div class="time-bar-bg">
+        <div class="time-bar-fill" id="time-bar-fill"></div>
       </div>
-
-      <!-- Timer à droite (affiche le temps restant) -->
+      <!-- Timer sera positionné par-dessus -->
       <div class="time-remaining" id="time-remaining">0:00</div>
     </div>
   </div>
+</div>
 
   <!-- On charge la librairie StreamerbotClient si vous l'utilisez via unpkg -->
   <script 
