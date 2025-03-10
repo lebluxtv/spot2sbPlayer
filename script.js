@@ -3,8 +3,10 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression (100% -> 0%), la colorimétrie,
  * le titre défilant conditionnel, et les animations "slide in".
- * 
- * Ajout : Si ?album=disc => pochette ronde et rotation "vinyle".
+ *
+ * Ajout : 
+ *  - Si ?album=disc => pochette ronde et rotation "vinyle".
+ *  - Si ?opacity=50 => background blur a 0.5 d’opacité (par ex).
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -15,15 +17,26 @@ let timeSpent = 0;         // secondes déjà écoulées
 let trackDuration = 180;   // durée totale (par défaut)
 let isPaused = false;
 
-/** Récupération des paramètres d'URL (ex: ?width=700&barColor=ff0000&album=disc) **/
+/** Récupération des paramètres d'URL (ex: ?width=700&barColor=ff0000&album=disc&opacity=50) **/
 const urlParams = new URLSearchParams(window.location.search);
 const customWidth    = urlParams.get('width');
 const customBarColor = urlParams.get('barColor');
-const albumParam     = urlParams.get('album'); // "disc" => rotation circulaire
+const albumParam     = urlParams.get('album');   // "disc" => rotation circulaire
+const opacityParam   = urlParams.get('opacity'); // e.g. "50" => 0.5
 
 /** Ajuste la largeur si demandée **/
 if (customWidth) {
   document.querySelector('.player').style.width = customWidth + 'px';
+}
+
+/** Ajuste l'opacité si demandée **/
+if (opacityParam) {
+  // Convert e.g. "50" -> 0.50
+  const numericVal = parseFloat(opacityParam) / 100;
+  // If it’s a valid number between 0 and 1, override the .bg-blur’s default opacity
+  if (!isNaN(numericVal) && numericVal >= 0 && numericVal <= 1) {
+    document.querySelector('.bg-blur').style.opacity = numericVal;
+  }
 }
 
 /** Création du client WebSocket (via streamerbot-client) **/
@@ -67,7 +80,7 @@ client.on('General.Custom', ({ event, data }) => {
     const songName    = data.songName;
     const artistName  = data.artistName;
     const albumArtUrl = data.albumArtUrl || "";
-    const durationSec = data.duration   || 180; 
+    const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
     // a) La piste a changé ?
@@ -342,8 +355,8 @@ function makeVibrant(r, g, b, minSat, maxLight) {
  * -> renvoie [h, s, l] ∈ [0..1]
  ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255; 
-  g /= 255; 
+  r /= 255;
+  g /= 255;
   b /= 255;
 
   const max = Math.max(r, g, b);
