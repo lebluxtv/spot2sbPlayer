@@ -1,9 +1,9 @@
 /************************************************************
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression (commence à 100%, se vide jusqu'à 0%)
- * + colorimétrie via ColorThief, + titre défilant si trop long
- * (et statique si pas trop long).
+ * la barre de progression (commence à 100%, se vide jusqu'à 0%),
+ * la colorimétrie via ColorThief, le titre défilant (seulement
+ * si trop long), ET les animations "slide in" pour nouvelle piste.
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -85,15 +85,17 @@ client.on('General.Custom', ({ event, data }) => {
  * - Gère la barre de progression (part de 100% -> 0%)
  * - Gère la colorimétrie (barColor param ou ColorThief)
  * - Active/désactive le défilement du titre si besoin
+ * - Ajoute des animations "slide in" pour la nouvelle piste
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
   // Sélections DOM
-  const bgBlur        = document.getElementById("bg-blur");
-  const coverArt      = document.getElementById("cover-art");
-  const trackNameSpan = document.getElementById("track-name");  // c'est le <span>
-  const artistNameEl  = document.getElementById("artist-name");
-  const timeBarFill   = document.getElementById("time-bar-fill");
-  const timeRemaining = document.getElementById("time-remaining");
+  const bgBlur         = document.getElementById("bg-blur");
+  const coverArt       = document.getElementById("cover-art");
+  const trackNameSpan  = document.getElementById("track-name");
+  const artistNameEl   = document.getElementById("artist-name");
+  const timeBarFill    = document.getElementById("time-bar-fill");
+  const timeBarBg      = document.getElementById("time-bar-bg");
+  const timeRemaining  = document.getElementById("time-remaining");
 
   // Mise à jour de base (fond flou, pochette, textes)
   bgBlur.style.backgroundImage   = `url('${albumArtUrl}')`;
@@ -164,6 +166,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   requestAnimationFrame(() => {
     setupScrollingTitle();
   });
+
+  // -- Appliquer les animations "slide in" (pour la nouvelle piste) --
+  animateElement(coverArt,     'slide-in-left');  // pochette
+  animateElement(artistNameEl, 'slide-in-top');   // artiste
+  animateElement(trackNameSpan,'slide-in-top');   // titre
+  animateElement(timeBarBg,    'slide-in-right'); // barre
+  animateElement(timeRemaining,'slide-in-right'); // timer
 }
 
 /************************************************************
@@ -235,6 +244,28 @@ function setupScrollingTitle() {
       span.style.paddingLeft = '0';
     }
   });
+}
+
+/************************************************************
+ * animateElement
+ * -> Ajoute une classe d'animation, puis la retire
+ *    après la fin de l'animation (pour rejouer plus tard)
+ ************************************************************/
+function animateElement(element, animationClass) {
+  // Pour rejouer l'animation à chaque nouvelle piste,
+  // on retire la classe si elle existe déjà
+  element.classList.remove(animationClass);
+
+  // Force le reflow
+  void element.offsetWidth; 
+
+  // Ajoute la classe
+  element.classList.add(animationClass);
+
+  // Quand l'animation se termine, on retire la classe
+  element.addEventListener('animationend', () => {
+    element.classList.remove(animationClass);
+  }, { once: true });
 }
 
 /************************************************************
@@ -357,3 +388,4 @@ function hslToRgb(h, s, l) {
     Math.round(b * 255)
   ];
 }
+
