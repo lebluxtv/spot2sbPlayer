@@ -72,10 +72,30 @@ body {
 }
 
 /* Titres */
+/* Empêche le titre de passer sur 2 lignes et ajoute l'animation */
 .track-name {
-  font-size: 1.1rem;
-  font-weight: bold;
-  margin-bottom: 4px;
+  position: relative;    /* pour le conteneur */
+  overflow: hidden;      /* masque le dépassement */
+  white-space: nowrap;   /* pas de saut de ligne */
+  width: 100%;           /* prend toute la largeur possible */
+  height: 1.2em;         /* hauteur fixe pour éviter le wrap */
+}
+
+/* L’élément qui défile */
+.track-name span {
+  display: inline-block; 
+  /* On lui met un padding-left pour que le texte démarre “hors cadre” 
+     et rentre ensuite dans le conteneur */
+  padding-left: 100%;   
+  
+  /* Durée et vitesse de défilement : 10s (à ajuster à vos besoins) */
+  animation: marquee 10s linear infinite;
+}
+
+/* L’animation : on translate le texte de 0% à -100% */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 .artist-name {
   font-size: 0.9rem;
