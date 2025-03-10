@@ -67,7 +67,7 @@ body {
   margin-right: 10px;
   /* Pour éviter que la pochette ne rapetisse trop,
      on peut forcer une largeur mini, ex: min-width: 60px; */
-  min-width: 60px;
+  min-width: 80px;
   /* Par défaut, flex items peuvent s’agrandir/rapetisser,
      on peut figer la pochette en "auto" :
   */
