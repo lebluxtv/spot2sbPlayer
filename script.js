@@ -39,7 +39,19 @@ client.on('General.Custom', ({ event, data }) => {
   // Filtre sur widget
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
-
+// Si noSong = true => on masque la div .player
+  if (data.noSong === true) {
+    document.querySelector('.player').style.display = 'none';
+    return;
+  } else {
+    document.querySelector('.player').style.display = 'block';
+  }// Si noSong = true => on masque la div .player
+  if (data.noSong === true) {
+    document.querySelector('.player').style.display = 'none';
+    return;
+  } else {
+    document.querySelector('.player').style.display = 'block';
+  }
   // On récupère l'état => "playing" ou "paused"
   const stateValue = data.state || "paused"; // par défaut, on met "paused"
 
