@@ -52,12 +52,11 @@ body {
   align-items: center; /* Centre verticalement */
   height: 100%;
   padding: 0 10px;
-  min-width: 0; /* important pour permettre au texte de déborder si nécessaire */
 }
 
-/* Pochette album : ne rétrécit pas */
+/* Pochette album */
 .cover-art {
-  flex-shrink: 0; /* empêche la réduction */
+  flex-shrink: 0;          /* Empêche la pochette de se réduire si le titre est long */
   width: 60px;
   height: 60px;
   background-size: cover;
@@ -69,27 +68,29 @@ body {
 .info-bar {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto; /* prend la place restante */
-  min-width: 0;   /* indispensable en flexbox pour overflow hidden */
+  justify-content: center;
+  flex: 1;             /* Titre + barre s'étirent dans l'espace restant */
+  min-width: 0;        /* Autorise le titre à déborder si besoin */
 }
 
-/* Titre : on le fait défiler seulement si nécessaire */
+/* Titre: on le fait défiler si trop long */
 .track-name {
   position: relative;
-  overflow: hidden;     /* masque le texte trop long */
-  white-space: nowrap;  /* pas de retour à la ligne */
+  overflow: hidden;
+  white-space: nowrap;
   width: 100%;
   height: 1.4em;
   margin-bottom: 4px;
 }
 
-/* Le span qui peut défiler */
+/* On retire l'animation par défaut, on la mettra en JS si besoin */
 .track-name span {
   display: inline-block;
-  /* Par défaut, on enlève l’animation ; on l’ajoutera en JS si besoin */
   animation: none;
+  padding-left: 0;
 }
 
+/* Animation "marquee" qu'on activera en JS */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
@@ -127,7 +128,7 @@ body {
   left: 0; 
   top: 0;
   height: 100%;
-  width: 100%; /* on la réduira via JS */
+  width: 100%; /* au départ, on la mettra à 100% */
   background: #0f0;
   transition: width 0.5s linear;
 }
