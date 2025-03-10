@@ -17,7 +17,10 @@ let timeSpent = 0;         // secondes déjà écoulées
 let trackDuration = 180;   // durée totale (par défaut)
 let isPaused = false;
 
-/** Récupération des paramètres d'URL (ex: ?width=700&barColor=ff0000&album=disc&opacity=50) **/
+/**
+ * Récupération des paramètres d'URL
+ * ex: ?width=700&barColor=ff0000&album=disc&opacity=50
+ */
 const urlParams = new URLSearchParams(window.location.search);
 const customWidth    = urlParams.get('width');
 const customBarColor = urlParams.get('barColor');
@@ -41,7 +44,7 @@ if (opacityParam) {
 
 /** Création du client WebSocket (via streamerbot-client) **/
 const client = new StreamerbotClient({
-  host: '127.0.0.1',  // à adapter
+  host: '127.0.0.1',  // à adapter à votre config
   port: 8080,
   endpoint: '/',
   password: 'streamer.bot'
@@ -112,11 +115,11 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarBg      = document.getElementById("time-bar-bg");
   const timeRemaining  = document.getElementById("time-remaining");
 
-  // Mise à jour de base (fond flou, pochette, textes)
+  // Mise à jour du fond flou + pochette
   bgBlur.style.backgroundImage   = `url('${albumArtUrl}')`;
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
 
-  // Si l’utilisateur a mis ?album=disc, on applique la classe .disc-mode
+  // Si l’utilisateur a mis ?album=disc => classe .disc-mode
   if (albumParam === 'disc') {
     coverArt.classList.add('disc-mode');
   } else {
@@ -142,9 +145,10 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
   // Couleur de la barre
   if (customBarColor) {
+    // On a un paramètre barColor => on l'applique directement
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
-    // On utilise ColorThief si l'image autorise le crossOrigin
+    // Sinon, on utilise ColorThief pour déterminer une couleur
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -153,17 +157,17 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     img.onload = function() {
       let [r, g, b] = colorThief.getColor(img);
 
-      // Rendez la couleur plus "vibrante" => impose minSat=0.5, maxLight=0.8
+      // Rendez la couleur plus "vibrante"
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
-      // On s’assure que la luminosité >= 0.3 par ex.
+      // On s’assure que la luminosité >= 0.3
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
 
       // Variations
-      const barColorArr    = adjustColor(r, g, b, 0.8);
-      const titleColorArr  = adjustColor(r, g, b, 1.4);
-      const artistColorArr = adjustColor(r, g, b, 1.2);
-      const timerColorArr  = adjustColor(r, g, b, 1.2);
+      const barColorArr    = adjustColor(r, g, b, 0.8); // pour la barre
+      const titleColorArr  = adjustColor(r, g, b, 1.4); // pour le titre
+      const artistColorArr = adjustColor(r, g, b, 1.2); // pour l’artiste
+      const timerColorArr  = adjustColor(r, g, b, 1.2); // pour le timer
 
       timeBarFill.style.backgroundColor = rgbString(barColorArr);
       trackNameSpan.style.color        = rgbString(titleColorArr);
@@ -192,7 +196,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     setupScrollingTitle();
   });
 
-  // -- Appliquer les animations "slide in" (pour la nouvelle piste) --
+  // Animations "slide in" pour la nouvelle piste
   animateElement(coverArt,     'slide-in-left');  // pochette
   animateElement(artistNameEl, 'slide-in-top');   // artiste
   animateElement(trackNameSpan,'slide-in-top');   // titre
@@ -201,9 +205,8 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 }
 
 /************************************************************
- * syncProgress(progressSec)
+ * syncProgress
  * -> La piste est la même, mais la position a changé
- *    On recadre timeSpent si l'écart est trop grand
  ************************************************************/
 function syncProgress(progressSec) {
   const diff = Math.abs(progressSec - timeSpent);
@@ -215,32 +218,30 @@ function syncProgress(progressSec) {
 
 /************************************************************
  * updateBarAndTimer
- * -> Barre de 100% -> 0% (elle se vide).
+ * -> Barre de 100% -> 0% (elle se vide) + timer "mm:ss"
  ************************************************************/
 function updateBarAndTimer() {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // timeSpent = 0 => barre = 100%
-  // timeSpent = trackDuration => barre = 0%
+  // timeSpent=0 => barre=100%, timeSpent=trackDuration => barre=0%
   const pct = 100 - (timeSpent / trackDuration * 100);
   timeBarFill.style.width = pct + "%";
 
-  // Timer: on affiche "le temps restant"
+  // Timer => "mm:ss" du temps restant
   const timeLeft = trackDuration - timeSpent;
   timeRemaining.textContent = formatTime(timeLeft);
 }
 
 /************************************************************
  * setupScrollingTitle
- * -> Active ou non l'animation "marquee" en fonction
- *    de la place disponible vs. la largeur du texte
+ * -> Active/désactive l'animation "marquee" si le texte dépasse
  ************************************************************/
 function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
   const span      = document.getElementById('track-name');
 
-  // Désactive l'animation par défaut
+  // On retire toute animation par défaut
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
 
@@ -249,11 +250,11 @@ function setupScrollingTitle() {
     const textWidth      = span.scrollWidth;
 
     if (textWidth > containerWidth) {
-      // On active le défilement
+      // Activer le défilement
       span.style.paddingLeft = containerWidth + 'px';
       span.style.animation = 'marquee 10s linear infinite';
     } else {
-      // On le désactive
+      // Désactiver
       span.style.animation = 'none';
       span.style.paddingLeft = '0';
     }
@@ -262,11 +263,10 @@ function setupScrollingTitle() {
 
 /************************************************************
  * animateElement
- * -> Ajoute une classe d'animation, puis la retire
- *    après la fin de l'animation (pour rejouer plus tard)
+ * -> Ajoute une classe (slide-in-left, etc.) puis la retire
  ************************************************************/
 function animateElement(element, animationClass) {
-  // Retire d'abord la classe si elle existe
+  // Retire d'abord la classe
   element.classList.remove(animationClass);
 
   // Force le reflow
@@ -275,7 +275,7 @@ function animateElement(element, animationClass) {
   // Ajoute la classe
   element.classList.add(animationClass);
 
-  // Quand l'animation se termine, on retire la classe
+  // Retire la classe à la fin de l'animation
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
   }, { once: true });
@@ -302,8 +302,8 @@ function formatTime(sec) {
 }
 
 /************************************************************
- * ensureMinimumLightness(r, g, b, minL)
- * -> Convertit en HSL, force L >= minL, puis reconvertit en RGB
+ * ensureMinimumLightness
+ * -> Convertit en HSL, force L >= minL, reconvertit en RGB
  ************************************************************/
 function ensureMinimumLightness(r, g, b, minL) {
   let [h, s, l] = rgbToHsl(r, g, b);
@@ -314,8 +314,8 @@ function ensureMinimumLightness(r, g, b, minL) {
 }
 
 /************************************************************
- * adjustColor(r, g, b, factor)
- * -> factor > 1 => éclaircit, factor < 1 => assombrit
+ * adjustColor
+ * -> factor>1 => éclaircit, factor<1 => assombrit
  ************************************************************/
 function adjustColor(r, g, b, factor) {
   const nr = Math.round(r * factor);
@@ -330,16 +330,14 @@ function adjustColor(r, g, b, factor) {
 
 /************************************************************
  * rgbString
- * -> Convertit [r, g, b] en "rgb(r, g, b)"
  ************************************************************/
 function rgbString([r, g, b]) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
 /************************************************************
- * makeVibrant(r, g, b, minSat, maxLight)
- * -> Convertit en HSL, force S >= minSat, L <= maxLight,
- *    puis reconvertit en RGB
+ * makeVibrant
+ * -> Convertit (r,g,b) -> HSL, force S >= minSat, L <= maxLight
  ************************************************************/
 function makeVibrant(r, g, b, minSat, maxLight) {
   let [h, s, l] = rgbToHsl(r, g, b);
@@ -351,12 +349,12 @@ function makeVibrant(r, g, b, minSat, maxLight) {
 }
 
 /************************************************************
- * rgbToHsl(r, g, b)
+ * rgbToHsl
  * -> renvoie [h, s, l] ∈ [0..1]
  ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255;
-  g /= 255;
+  r /= 255; 
+  g /= 255; 
   b /= 255;
 
   const max = Math.max(r, g, b);
@@ -375,9 +373,15 @@ function rgbToHsl(r, g, b) {
       : diff / (max + min);
 
     switch (max) {
-      case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / diff + 2; break;
-      case b: h = (r - g) / diff + 4; break;
+      case r:
+        h = (g - b) / diff + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / diff + 2;
+        break;
+      case b:
+        h = (r - g) / diff + 4;
+        break;
     }
     h /= 6;
   }
@@ -385,7 +389,7 @@ function rgbToHsl(r, g, b) {
 }
 
 /************************************************************
- * hslToRgb(h, s, l)
+ * hslToRgb
  * -> renvoie [r, g, b] ∈ [0..255]
  ************************************************************/
 function hslToRgb(h, s, l) {
@@ -404,7 +408,9 @@ function hslToRgb(h, s, l) {
     return p;
   };
 
-  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
+  const q = (l < 0.5)
+    ? (l * (1 + s))
+    : (l + s - l*s);
   const p = 2*l - q;
 
   const r = hue2rgb(p, q, h + 1/3);
