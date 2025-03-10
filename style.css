@@ -18,9 +18,9 @@ body {
 /* Container principal */
 .player {
   position: relative;
-  width: 600px;      /* Valeur par défaut (override via ?width=###) */
+  width: 600px;    /* Valeur par défaut (override via ?width=###) */
   height: 100px;
-  overflow: hidden;  /* ensures the background blur is also clipped */
+  overflow: hidden; 
   border-radius: 10px; /* corners are rounded */
 }
 
@@ -50,8 +50,6 @@ body {
   position: relative;
   z-index: 2;
   display: flex;
-  /* On aligne en stretch pour que la pochette prenne
-     toute la hauteur du player */
   align-items: stretch;
   height: 100%;
   padding: 0 10px;
@@ -64,13 +62,13 @@ body {
   background-position: center;
   margin-right: 10px;
   min-width: 80px;
-  flex: 0 0 auto; /* pochette fixe */
+  flex: 0 0 auto;
 }
 
 /* Si l'utilisateur demande album=disc => rendu circulaire + rotation vinyle */
 .disc-mode {
   border-radius: 50%;
-  animation: disc-spin 6s linear infinite; /* durée de rotation ajustable */
+  animation: disc-spin 6s linear infinite;
 }
 
 @keyframes disc-spin {
@@ -83,8 +81,8 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between; 
-  flex: 1; /* prend la place restante */
-  min-width: 0; /* permet au texte de s'ajuster si trop long */
+  flex: 1;
+  min-width: 0; 
 }
 
 /* Titre: on le fait défiler si trop long */
@@ -139,8 +137,8 @@ body {
   left: 0; 
   top: 0;
   height: 100%;
-  width: 100%; /* départ: 100% -> 0% */
-  background: #0f0;
+  width: 100%;
+  background: #0f0; /* départ: 100% -> 0% */
   transition: width 0.5s linear;
 }
 
@@ -189,7 +187,6 @@ body {
   }
 }
 
-/* Classes utilitaires qu'on applique en JS */
 .slide-in-left {
   animation: slideInLeft 1.5s forwards;
 }
