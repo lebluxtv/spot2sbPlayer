@@ -5,6 +5,8 @@
  * via ColorThief, sans réinitialiser la barre si la chanson
  * ne change pas. On tient compte de data.state pour figer la
  * barre en pause, et data.noSong pour masquer le player.
+ * 
+ * ICI, la barre se remplit de DROITE à GAUCHE (right: 0).
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -142,7 +144,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     };
   }
 
-  // Lancement de l'interval pour incrémenter timeSpent (barre qui va 0% -> 100%)
+  // Lancement de l'interval pour incrémenter timeSpent (barre 0% -> 100% en occupant la place depuis la DROITE)
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -173,13 +175,16 @@ function syncProgress(progressSec) {
 
 /************************************************************
  * updateBarAndTimer
- * -> Met à jour la barre (de 0% à 100%) et le timer (temps restant)
+ * -> Met à jour la barre (de 0% à 100%, partant de la DROITE)
+ *    et le timer (temps restant).
  ************************************************************/
 function updateBarAndTimer() {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
   // Barre: ratio = timeSpent / trackDuration
+  // On veut un "pct" qui va de 0 à 100.
+  // Comme la barre est positionnée "right: 0", un width=100% la remplit entièrement depuis la droite.
   const pct = (timeSpent / trackDuration) * 100;
   timeBarFill.style.width = pct + "%";
 
@@ -205,7 +210,7 @@ function resumeProgressBar() {
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return `${m}:${s < 10 ? "0" + s : s}`;
+  return `${m}:${s < 10 ? "0"+s : s}`;
 }
 
 /************************************************************
