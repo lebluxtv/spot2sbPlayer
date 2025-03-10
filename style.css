@@ -80,6 +80,7 @@ body {
   white-space: nowrap;
   width: 100%;
   height: 1.4em;
+margin-top: 4px;
   margin-bottom: 4px;
 }
 /* Le <span> qui contient le texte du titre */
