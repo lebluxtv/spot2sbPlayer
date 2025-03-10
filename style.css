@@ -102,10 +102,10 @@ body {
 
 .time-bar-fill {
   position: absolute;
-  left: 0; 
+  right: 0;
   top: 0;
   height: 100%;
-  width: 0%; /* on part de 0 */
+  width: 0%; /* on part de 0%, et on ira vers 100% */
   background: #0f0;
   transition: width 0.5s linear;
 }
