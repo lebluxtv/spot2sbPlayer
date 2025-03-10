@@ -130,14 +130,18 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     img.onload = function() {
       let [r, g, b] = colorThief.getColor(img);
 
-      // Rendez la couleur plus "vibrante" => impose minSat=0.5, maxLight=0.8
+      // Étape 1 : Forcer saturation >= 0.5 et luminosité <= 0.8
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
+      // Étape 2 : S’assurer qu’on n’est pas trop sombre (ex. l >= 0.3)
+      //           => on applique ensureMinimumLightness
+      [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
+
       // Variations
-      const barColorArr    = adjustColor(r, g, b, 0.8); // barre
-      const titleColorArr  = adjustColor(r, g, b, 1.4); // titre
-      const artistColorArr = adjustColor(r, g, b, 1.2); // artiste
-      const timerColorArr  = adjustColor(r, g, b, 1.2); // timer
+      const barColorArr    = adjustColor(r, g, b, 0.8); 
+      const titleColorArr  = adjustColor(r, g, b, 1.4);
+      const artistColorArr = adjustColor(r, g, b, 1.2);
+      const timerColorArr  = adjustColor(r, g, b, 1.2);
 
       timeBarFill.style.backgroundColor = rgbString(barColorArr);
       trackNameSpan.style.color        = rgbString(titleColorArr);
@@ -276,6 +280,18 @@ function formatTime(sec) {
 }
 
 /************************************************************
+ * ensureMinimumLightness(r, g, b, minL)
+ * -> Convertit en HSL, force L >= minL, puis reconvertit en RGB
+ ************************************************************/
+function ensureMinimumLightness(r, g, b, minL) {
+  let [h, s, l] = rgbToHsl(r, g, b);
+  if (l < minL) {
+    l = minL;
+  }
+  return hslToRgb(h, s, l);
+}
+
+/************************************************************
  * adjustColor(r, g, b, factor)
  * -> factor > 1 => éclaircit, factor < 1 => assombrit
  ************************************************************/
@@ -337,15 +353,9 @@ function rgbToHsl(r, g, b) {
       : diff / (max + min);
 
     switch (max) {
-      case r:
-        h = (g - b) / diff + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / diff + 2;
-        break;
-      case b:
-        h = (r - g) / diff + 4;
-        break;
+      case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / diff + 2; break;
+      case b: h = (r - g) / diff + 4; break;
     }
     h /= 6;
   }
