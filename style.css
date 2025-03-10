@@ -54,8 +54,8 @@ body {
   padding: 0 10px;
 }
 
-/* Pochette album */
 .cover-art {
+  flex-shrink: 0; /* ne pas rétrécir */
   width: 60px;
   height: 60px;
   background-size: cover;
@@ -63,23 +63,20 @@ body {
   margin-right: 10px;
 }
 
-/* Bloc texte + barre */
 .info-bar {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0; /* indispensable pour que le texte puisse être masqué/overflow */
 }
 
-/* Titre : on le fait défiler si trop long.
-   Par défaut, on applique une animation "marquee" 
-   mais on la désactivera en JS si le texte est court. */
 .track-name {
   position: relative;
-  overflow: hidden;     /* masque le texte qui déborde */
-  white-space: nowrap;  /* pas de retour à la ligne */
-  width: 100%;          
-  height: 1.4em;        /* hauteur fixe (une seule ligne) */
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  min-width: 0; /* évite que le texte force l’élargissement */
+  height: 1.4em;
   margin-bottom: 4px;
 }
 
