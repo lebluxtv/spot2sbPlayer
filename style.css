@@ -34,8 +34,6 @@ body {
   opacity: 0.6;
   z-index: 1;
 }
-
-/* Voile sombre pour améliorer la lisibilité du texte */
 .bg-blur::after {
   content: "";
   position: absolute;
@@ -44,46 +42,38 @@ body {
   pointer-events: none;
 }
 
-/* Contenu (pochette, infos, timer) */
+/* Contenu (pochette, infos) */
 .player-content {
   position: relative;
   z-index: 2;
   display: flex;
-  /* On aligne en stretch pour que la pochette prenne
-     toute la hauteur dispo, du haut du texte jusqu’à la barre */
+  /* Pour que la pochette prenne toute la hauteur possible */
   align-items: stretch;
-  height: 100%;       /* la hauteur totale du player */
+  height: 100%;
   padding: 0 10px;
 }
 
-
 /* Pochette album */
 .cover-art {
-  /* On impose plutôt un ratio 1/1 pour qu'elle reste carrée
-     et s'aligne verticalement */
+  /* Ratio 1:1 pour qu'elle reste carrée */
   aspect-ratio: 1 / 1;
   background-size: cover;
   background-position: center;
   margin-right: 10px;
-  /* Pour éviter que la pochette ne rapetisse trop,
-     on peut forcer une largeur mini, ex: min-width: 60px; */
-  min-width: 80px;
-  /* Par défaut, flex items peuvent s’agrandir/rapetisser,
-     on peut figer la pochette en "auto" :
-  */
-  flex: 0 0 auto;
+  min-width: 80px;    /* Largeur mini de la pochette */
+  flex: 0 0 auto;     /* Empêche de s'étirer/s'écraser */
 }
 
 /* Bloc texte + barre */
 .info-bar {
   display: flex;
   flex-direction: column;
-  justify-content: space-between; 
-  flex: 1; /* prend toute la place horizontalement */
-  min-width: 0; /* permet au texte de s'ajuster si trop long */
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0; /* Permet au texte de s'ajuster si trop long */
 }
 
-/* Titre: on le fait défiler si trop long */
+/* Titre (fait défiler si trop long, mais on active l'anim en JS si besoin) */
 .track-name {
   position: relative;
   overflow: hidden;
@@ -92,17 +82,11 @@ body {
   height: 1.4em;
   margin-bottom: 4px;
 }
-
-/* On retire l'animation par défaut, on l'activera en JS si besoin */
 .track-name span {
   display: inline-block;
+  /* Par défaut, on ne met pas d'animation, on l'activera en JS */
   animation: none;
   padding-left: 0;
-}
-
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
 }
 
 /* Artiste */
@@ -112,21 +96,20 @@ body {
   opacity: 0.9;
 }
 
-/* La rangée contenant la barre + timer */
+/* time-row : conteneur pour la barre + timer */
 .time-row {
   position: relative;
   margin-top: 6px;
-  /* Optionnel: si vous voulez “pousser” la barre en bas, 
-     on peut jouer sur "justify-content: space-between" 
-     dans .info-bar, et faire en sorte que .time-row 
-     soit le dernier bloc. */
+  /* vous pouvez ajuster la hauteur si vous voulez
+     plus ou moins d'espace. */
+  height: 24px;
 }
 
 /* Barre de progression */
 #time-bar-bg {
   position: absolute;
   left: 0;
-  bottom: 0;
+  bottom: 0;    /* collée en bas du time-row */
   width: 100%;
   height: 10px;
   background: #444;
@@ -145,10 +128,13 @@ body {
   transition: width 0.5s linear;
 }
 
-/* Timer en haut à droite */
+/* Timer: on le place en haut à droite, au-dessus de la barre */
 .time-remaining {
   position: absolute;
   right: 8px;
+  /* On veut qu'il soit au-dessus (physiquement) de la barre:
+     on peut par ex. le mettre bottom: 12px; ou top: 0. 
+     Ici, on choisit top: 0. */
   top: 0;
   z-index: 2;
   font-size: 0.9rem;
@@ -199,4 +185,10 @@ body {
 }
 .slide-in-top {
   animation: slideInTop 1.5s forwards;
+}
+
+/* Animation de défilement du titre (si besoin en JS) */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
