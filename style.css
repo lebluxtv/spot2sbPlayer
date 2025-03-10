@@ -119,6 +119,7 @@ body {
 /* Barre de progression + timer */
 .time-row {
   position: relative;
+  height: 24px; /* <-- added a fixed height to ensure space for the timer */
   margin-top: 6px;
 }
 
