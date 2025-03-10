@@ -49,61 +49,48 @@ body {
   position: relative;
   z-index: 2;
   display: flex;
-  /* On aligne en stretch pour que la pochette prenne
-     toute la hauteur du player */
-  align-items: stretch;
+  align-items: center; /* Centre verticalement */
   height: 100%;
   padding: 0 10px;
 }
 
-/* Pochette album (carrée par défaut) */
+/* Pochette album */
 .cover-art {
-  aspect-ratio: 1 / 1;
+  width: 60px;
+  height: 60px;
   background-size: cover;
   background-position: center;
   margin-right: 10px;
-  min-width: 80px;
-  flex: 0 0 auto; /* pochette fixe */
-}
-
-/* Si l'utilisateur demande album=disc, on applique .disc-mode
-   => rendu circulaire + rotation */
-.disc-mode {
-  border-radius: 50%;
-  animation: disc-spin 6s linear infinite; /* durée de rotation ajustable */
-}
-
-@keyframes disc-spin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 /* Bloc texte + barre */
 .info-bar {
   display: flex;
   flex-direction: column;
-  justify-content: space-between; 
-  flex: 1; /* prend la place restante */
-  min-width: 0; /* permet au texte de s'ajuster si trop long */
+  justify-content: center;
+  flex: 1;
 }
 
-/* Titre: on le fait défiler si trop long */
+/* Titre : on le fait défiler si trop long.
+   Par défaut, on applique une animation "marquee" 
+   mais on la désactivera en JS si le texte est court. */
 .track-name {
   position: relative;
-  overflow: hidden;
-  white-space: nowrap;
-  width: 100%;
-  height: 1.4em;
+  overflow: hidden;     /* masque le texte qui déborde */
+  white-space: nowrap;  /* pas de retour à la ligne */
+  width: 100%;          
+  height: 1.4em;        /* hauteur fixe (une seule ligne) */
   margin-bottom: 4px;
 }
 
-/* On retire l'animation par défaut, on l'activera en JS si besoin */
+/* Le span qui va potentiellement défiler */
 .track-name span {
   display: inline-block;
-  animation: none;
-  padding-left: 0;
+  padding-left: 100%;       
+  animation: marquee 10s linear infinite;
 }
 
+/* Animation "marquee" de base */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
@@ -116,12 +103,14 @@ body {
   opacity: 0.9;
 }
 
-/* Barre de progression + timer */
+/* La rangée contenant la barre + timer */
 .time-row {
   position: relative;
+  height: 24px; /* assez pour la barre + le timer */
   margin-top: 6px;
 }
 
+/* Barre de progression */
 .time-bar-bg {
   position: absolute;
   left: 0;
@@ -133,12 +122,13 @@ body {
   overflow: hidden;
 }
 
+/* On part d’une barre pleine (width=100%) et on réduit vers 0% */
 .time-bar-fill {
   position: absolute;
   left: 0; 
   top: 0;
   height: 100%;
-  width: 100%; /* départ: 100% -> 0% */
+  width: 100%; /* départ à 100% */
   background: #0f0;
   transition: width 0.5s linear;
 }
@@ -152,49 +142,4 @@ body {
   font-size: 0.9rem;
   font-weight: bold;
   pointer-events: none;
-}
-
-/**************************************************************
- * Animations "slide in" (arrivée)
- **************************************************************/
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-150%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-@keyframes slideInRight {
-  from {
-    transform: translateX(150%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-@keyframes slideInTop {
-  from {
-    transform: translateY(-50%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Classes utilitaires qu'on applique en JS */
-.slide-in-left {
-  animation: slideInLeft 1.5s forwards;
-}
-.slide-in-right {
-  animation: slideInRight 1.5s forwards;
-}
-.slide-in-top {
-  animation: slideInTop 1.5s forwards;
 }
