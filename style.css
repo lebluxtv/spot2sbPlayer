@@ -78,7 +78,7 @@ body {
 .info-bar {
   display: flex;
   flex-direction: column;
-  justify-content: center; 
+  justify-content: space-between; 
   flex: 1; /* prend toute la place horizontalement */
   min-width: 0; /* permet au texte de s'ajuster si trop long */
 }
