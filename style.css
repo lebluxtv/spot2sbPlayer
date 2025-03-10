@@ -71,44 +71,44 @@ body {
   flex: 1;
 }
 
-/* Titres */
-/* Empêche le titre de passer sur 2 lignes et ajoute l'animation */
+/* Titre: on le fait défiler si trop long */
 .track-name {
-  position: relative;    /* pour le conteneur */
-  overflow: hidden;      /* masque le dépassement */
-  white-space: nowrap;   /* pas de saut de ligne */
-  width: 100%;           /* prend toute la largeur possible */
-  height: 1.2em;         /* hauteur fixe pour éviter le wrap */
+  position: relative;
+  overflow: hidden;     /* masque le texte qui déborde */
+  white-space: nowrap;  /* pas de retour à la ligne */
+  width: 100%;          
+  height: 1.4em;        /* hauteur fixe (une ligne) */
+  margin-bottom: 4px;
 }
 
-/* L’élément qui défile */
+/* Le span qui va défiler */
 .track-name span {
-  display: inline-block; 
-  /* On lui met un padding-left pour que le texte démarre “hors cadre” 
-     et rentre ensuite dans le conteneur */
-  padding-left: 100%;   
-  
-  /* Durée et vitesse de défilement : 10s (à ajuster à vos besoins) */
+  display: inline-block;
+  padding-left: 100%;       /* commence en dehors du conteneur */
   animation: marquee 10s linear infinite;
+  /* On peut ajuster la durée (10s) selon la longueur du texte */
 }
 
-/* L’animation : on translate le texte de 0% à -100% */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
+
+/* Artiste */
 .artist-name {
   font-size: 0.9rem;
   margin-bottom: 6px;
   opacity: 0.9;
 }
 
+/* La rangée contenant la barre + timer */
 .time-row {
   position: relative;
   height: 24px; /* assez pour la barre + le timer */
   margin-top: 6px;
 }
 
+/* Barre de progression */
 .time-bar-bg {
   position: absolute;
   left: 0;
@@ -120,20 +120,22 @@ body {
   overflow: hidden;
 }
 
+/* On part d’une barre pleine (width=100%) et on réduit vers 0% */
 .time-bar-fill {
   position: absolute;
-  right: 0;
+  left: 0; 
   top: 0;
   height: 100%;
-  width: 0%; /* on part de 0%, et on ira vers 100% */
+  width: 100%; /* au départ on la mettra à 100% */
   background: #0f0;
   transition: width 0.5s linear;
 }
 
+/* Timer en haut à droite */
 .time-remaining {
   position: absolute;
   right: 8px;
-  top: 0;   /* le place en haut à droite */
+  top: 0;
   z-index: 2;
   font-size: 0.9rem;
   font-weight: bold;
