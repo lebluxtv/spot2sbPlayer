@@ -83,41 +83,37 @@ body {
   opacity: 0.9;
 }
 
-/* Conteneur "time-row" plus grand pour loger barre + timer */
 .time-row {
   position: relative;
-  height: 24px; /* Assez grand pour la barre + le timer */
-  margin-top: 6px; 
+  height: 24px; /* assez pour la barre + le timer */
+  margin-top: 6px;
 }
 
-/* La barre est calée en bas du conteneur */
 .time-bar-bg {
   position: absolute;
   left: 0;
-  bottom: 0; /* la barre tout en bas */
+  bottom: 0;
   width: 100%;
-  height: 10px;  /* hauteur de la barre */
+  height: 10px;
   background: #444;
   border-radius: 4px;
   overflow: hidden;
 }
 
-/* Remplissage de la barre */
 .time-bar-fill {
   position: absolute;
   left: 0; 
   top: 0;
- width: 0%; /* on part de 0 pour un “remplissage” progressif */
   height: 100%;
+  width: 0%; /* on part de 0 */
   background: #0f0;
   transition: width 0.5s linear;
 }
 
-/* Le timer, en position absolue, tout en haut à droite */
 .time-remaining {
   position: absolute;
-  top: 0;    /* ou top: -2px si besoin de remonter un peu */
   right: 8px;
+  top: 0;   /* le place en haut à droite */
   z-index: 2;
   font-size: 0.9rem;
   font-weight: bold;
