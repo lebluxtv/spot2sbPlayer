@@ -56,7 +56,7 @@ body {
 
 /* Pochette album */
 .cover-art {
-  flex-shrink: 0;          /* Empêche la pochette de se réduire si le titre est long */
+  flex-shrink: 0;
   width: 60px;
   height: 60px;
   background-size: cover;
@@ -70,7 +70,7 @@ body {
   flex-direction: column;
   justify-content: center;
   flex: 1;
-  min-width: 0; /* Autorise le titre à rogner si trop long */
+  min-width: 0;
 }
 
 /* Titre: on le fait défiler si trop long */
@@ -83,7 +83,7 @@ body {
   margin-bottom: 4px;
 }
 
-/* On retire l'animation par défaut, on la mettra en JS si besoin */
+/* On retire l'animation par défaut, on l'activera en JS si besoin */
 .track-name span {
   display: inline-block;
   animation: none;
@@ -110,7 +110,7 @@ body {
 }
 
 /* Barre de progression */
-.time-bar-bg {
+#time-bar-bg {
   position: absolute;
   left: 0;
   bottom: 0;
@@ -148,7 +148,7 @@ body {
  **************************************************************/
 @keyframes slideInLeft {
   from {
-    transform: translateX(-100%);
+    transform: translateX(-150%);
     opacity: 0;
   }
   to {
@@ -158,7 +158,7 @@ body {
 }
 @keyframes slideInRight {
   from {
-    transform: translateX(100%);
+    transform: translateX(150%);
     opacity: 0;
   }
   to {
