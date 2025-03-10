@@ -1,12 +1,7 @@
 /************************************************************
  * script.js
- * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression (commence à 100%, se vide jusqu'à 0%)
- * + colorimétrie via ColorThief, + titre défilant si trop long.
- * 
- * - noSong => masque le player
- * - state => "playing"/"paused"
- * - progress => position déjà écoulée (en secondes)
+ * Barre de progression : commence à 100% (pleine) et diminue
+ * jusqu'à 0%. Titre défilant seulement si trop long.
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -29,7 +24,7 @@ if (customWidth) {
 
 /** Création du client WebSocket (via streamerbot-client) **/
 const client = new StreamerbotClient({
-  host: '127.0.0.1',  // à adapter selon votre config
+  host: '127.0.0.1',  // à adapter
   port: 8080,
   endpoint: '/',
   password: 'streamer.bot'
@@ -59,7 +54,6 @@ client.on('General.Custom', ({ event, data }) => {
   if (stateValue === 'paused') {
     pauseProgressBar();
   } else {
-    // stateValue === "playing"
     resumeProgressBar();
   }
 
@@ -87,13 +81,13 @@ client.on('General.Custom', ({ event, data }) => {
  * - Met à jour la pochette, le fond flou
  * - Gère la barre de progression (part de 100% -> 0%)
  * - Gère la colorimétrie (barColor param ou ColorThief)
- * - Active ou non le défilement du titre si trop long
+ * - Active le défilement du titre si nécessaire
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
   // Sélections DOM
   const bgBlur        = document.getElementById("bg-blur");
   const coverArt      = document.getElementById("cover-art");
-  const trackNameSpan = document.getElementById("track-name");  // c'est le <span>
+  const trackNameSpan = document.getElementById("track-name");
   const artistNameEl  = document.getElementById("artist-name");
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
@@ -104,11 +98,10 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
   // Titre
   trackNameSpan.textContent = songName;
-  // On vérifie si le texte déborde (pour activer/désactiver le défilement)
-  updateTitleScrolling();
+  setupTitleScrolling(); // on va voir si on doit animer ou non
 
   // Artiste
-  artistNameEl.textContent  = artistName;
+  artistNameEl.textContent = artistName;
 
   // Stocker la durée, et le temps déjà écoulé
   trackDuration = durationSec;
@@ -127,7 +120,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   if (customBarColor) {
     timeBarFill.style.backgroundColor = '#' + customBarColor;
   } else {
-    // On utilise ColorThief si l'image autorise le crossOrigin
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -136,11 +128,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     img.onload = function() {
       let [r, g, b] = colorThief.getColor(img);
 
-      // Rendez la couleur plus "vibrante" => impose minSat=0.5, maxLight=0.8
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
 
-      // Variations
-      const barColorArr    = adjustColor(r, g, b, 0.8); 
+      const barColorArr    = adjustColor(r, g, b, 0.8);
       const titleColorArr  = adjustColor(r, g, b, 1.4);
       const artistColorArr = adjustColor(r, g, b, 1.2);
       const timerColorArr  = adjustColor(r, g, b, 1.2);
@@ -169,29 +159,35 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 }
 
 /************************************************************
- * updateTitleScrolling
- * -> Mesure la largeur du texte vs. conteneur. 
- *    Désactive l’animation si pas nécessaire.
+ * setupTitleScrolling
+ * -> Active ou désactive l'animation marquee si le texte est
+ *    plus large que le conteneur.
  ************************************************************/
-function updateTitleScrolling() {
-  const container = document.querySelector('.track-name');
-  const textSpan  = document.getElementById('track-name');
+function setupTitleScrolling() {
+  const trackNameContainer = document.querySelector('.track-name');
+  const trackNameSpan      = document.getElementById('track-name');
 
-  // Largeur réelle du texte (scrollWidth) vs. largeur du conteneur (offsetWidth)
-  const contentWidth   = textSpan.scrollWidth;
-  const containerWidth = container.offsetWidth;
+  // On désactive d'abord l'animation
+  trackNameSpan.style.animation = 'none';
+  trackNameSpan.style.paddingLeft = '0';
 
-  if (contentWidth <= containerWidth) {
-    // Le texte tient en une seule ligne => pas de défilement
-    textSpan.style.animation = 'none';
-  } else {
-    // Le texte déborde => on laisse l’animation "marquee"
-    textSpan.style.animation = 'marquee 10s linear infinite';
+  // Petit trick : on force le reflow
+  void trackNameSpan.offsetWidth;
+
+  // Mesurer
+  const containerWidth = trackNameContainer.offsetWidth;
+  const textWidth      = trackNameSpan.scrollWidth;
+
+  if (textWidth > containerWidth) {
+    // Si le texte est trop grand, on lance le marquee
+    // On peut ajuster la durée en fonction du ratio text/container
+    trackNameSpan.style.paddingLeft = containerWidth + 'px';
+    trackNameSpan.style.animation = 'marquee 10s linear infinite';
   }
 }
 
 /************************************************************
- * syncProgress(progressSec)
+ * syncProgress
  * -> La piste est la même, mais la position a changé
  *    On recadre timeSpent si l'écart est trop grand
  ************************************************************/
@@ -280,7 +276,6 @@ function makeVibrant(r, g, b, minSat, maxLight) {
 
 /************************************************************
  * rgbToHsl(r, g, b)
- * -> renvoie [h, s, l] ∈ [0..1]
  ************************************************************/
 function rgbToHsl(r, g, b) {
   r /= 255; 
@@ -320,7 +315,6 @@ function rgbToHsl(r, g, b) {
 
 /************************************************************
  * hslToRgb(h, s, l)
- * -> renvoie [r, g, b] ∈ [0..255]
  ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
