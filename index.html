@@ -10,34 +10,37 @@
     <!-- Arrière-plan flou -->
     <div class="bg-blur" id="bg-blur"></div>
 
-   <div class="player-content">
-  <!-- Pochette album -->
-  <div class="cover-art" id="cover-art"></div>
+    <div class="player-content">
+      <!-- Pochette album -->
+      <div class="cover-art" id="cover-art"></div>
 
-  <!-- Zone texte + barre -->
-  <div class="info-bar">
-    <div class="track-name" id="track-name">Titre</div>
-    <div class="artist-name" id="artist-name">Artiste</div>
+      <!-- Zone texte + barre -->
+      <div class="info-bar">
+        <div class="track-name" id="track-name">Titre</div>
+        <div class="artist-name" id="artist-name">Artiste</div>
 
-    <!-- Conteneur "time-row" qui inclut la barre + timer absolu -->
-    <div class="time-row">
-      <div class="time-bar-bg">
-        <div class="time-bar-fill" id="time-bar-fill"></div>
+        <!-- Conteneur "time-row" qui inclut la barre + timer absolu -->
+        <div class="time-row">
+          <div class="time-bar-bg">
+            <div class="time-bar-fill" id="time-bar-fill"></div>
+          </div>
+          <!-- Timer sera positionné par-dessus, à droite -->
+          <div class="time-remaining" id="time-remaining">0:00</div>
+        </div>
       </div>
-      <!-- Timer sera positionné par-dessus -->
-      <div class="time-remaining" id="time-remaining">0:00</div>
     </div>
   </div>
-</div>
 
-  <!-- On charge la librairie StreamerbotClient si vous l'utilisez via unpkg -->
+  <!-- Librairie streamerbot-client -->
   <script 
     type="text/javascript" 
     src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js">
   </script>
-<script src="https://unpkg.com/colorthief/dist/color-thief.umd.js"></script>
 
-  <!-- Puis on charge notre script.js -->
+  <!-- Librairie ColorThief (optionnelle) -->
+  <script src="https://unpkg.com/colorthief/dist/color-thief.umd.js"></script>
+
+  <!-- Script principal -->
   <script src="script.js"></script>
 </body>
 </html>
