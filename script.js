@@ -39,37 +39,33 @@ client.on('General.Custom', ({ event, data }) => {
   // Filtre sur widget
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
-// Si noSong = true => on masque la div .player
+
+  // 0) Si noSong = true => on masque la div .player et on s'arrête
   if (data.noSong === true) {
     document.querySelector('.player').style.display = 'none';
     return;
   } else {
-    document.querySelector('.player').style.display = 'block';
-  }// Si noSong = true => on masque la div .player
-  if (data.noSong === true) {
-    document.querySelector('.player').style.display = 'none';
-    return;
-  } else {
+    // Sinon, on l'affiche
     document.querySelector('.player').style.display = 'block';
   }
-  // On récupère l'état => "playing" ou "paused"
-  const stateValue = data.state || "paused"; // par défaut, on met "paused"
 
   // 1) État lecture/pause
+  //    (ex. data.state = "playing" ou "paused")
+  const stateValue = data.state || "paused"; // par défaut "paused"
   if (stateValue === 'paused') {
     pauseProgressBar();
   } else {
-    // stateValue === 'playing'
     resumeProgressBar();
   }
 
   // 2) Nouvelle info de piste
+  //    (songName, artistName, albumArtUrl, duration, progress)
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
     const albumArtUrl = data.albumArtUrl || "";
-    const durationSec = data.duration   || 180; // durée totale
-    const progressSec = data.progress   || 0;   // avancement actuel
+    const durationSec = data.duration   || 180; 
+    const progressSec = data.progress   || 0;
 
     // a) La piste a changé ?
     if (songName !== lastSongName) {
