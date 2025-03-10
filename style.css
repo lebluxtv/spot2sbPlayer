@@ -179,11 +179,11 @@ body {
 
 /* Classes utilitaires qu'on applique en JS */
 .slide-in-left {
-  animation: slideInLeft 0.5s forwards;
+  animation: slideInLeft 1.5s forwards;
 }
 .slide-in-right {
-  animation: slideInRight 0.5s forwards;
+  animation: slideInRight 1.5s forwards;
 }
 .slide-in-top {
-  animation: slideInTop 0.5s forwards;
+  animation: slideInTop 1.5s forwards;
 }
