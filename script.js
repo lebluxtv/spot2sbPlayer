@@ -9,29 +9,59 @@
  *  - ?opacity=50 => opacité 0.5 sur le .bg-blur
  *  - Player caché par défaut : on l'affiche seulement quand
  *    un payload arrive ET qu'il n'est pas noSong=true
+ *  - Paramètre ?hostApp=wpf => si détecté, on affiche un
+ *    message “Ouvert dans WPF” (ou autre) et on ne montre
+ *    pas le player.
  ************************************************************/
 
 /** Interval pour la progression **/
 let currentInterval = null;
 
 /** Variables pour la durée, la progression écoulée et l'état pause **/
-let timeSpent = 0;         // secondes déjà écoulées
-let trackDuration = 180;   // durée totale (par défaut)
+let timeSpent = 0;
+let trackDuration = 180;
 let isPaused = false;
 
-/** Récupération des paramètres d'URL (ex: ?width=700&color=ff0000&album=disc&opacity=50) **/
-const urlParams = new URLSearchParams(window.location.search);
-const customWidth    = urlParams.get('width');
-const customColor    = urlParams.get('color');   // ex. "ff0000"
-const albumParam     = urlParams.get('album');   // "disc"
-const opacityParam   = urlParams.get('opacity'); // ex. "50" => 0.5
+/** Récupération des paramètres d'URL **/
+const urlParams  = new URLSearchParams(window.location.search);
+const customWidth = urlParams.get('width');
+const customColor = urlParams.get('color');   // ex. "ff0000"
+const albumParam  = urlParams.get('album');   // "disc"
+const opacityParam= urlParams.get('opacity'); // ex. "50" => 0.5
+const hostApp     = urlParams.get('hostApp'); // ex. "wpf"
 
-/** Ajuste la largeur si demandée **/
+/************************************************************
+ * Vérification du hostApp
+ * => Si hostApp="wpf", on affiche un message WPF et on
+ *    ne montrera pas le player du tout.
+ ************************************************************/
+if (hostApp === "wpf") {
+  // On vide le body et on met un message
+  document.body.innerHTML = "";
+  const infoDiv = document.createElement('div');
+  infoDiv.textContent = "Cette page est ouverte depuis l'application WPF !";
+  infoDiv.style.color = "#ff0";
+  infoDiv.style.fontSize = "1.2rem";
+  infoDiv.style.padding = "20px";
+  document.body.appendChild(infoDiv);
+
+  // On peut s'arrêter là, plus rien à faire
+  // => Pas de player, pas de WS, etc.
+  // Si c'est la logique voulue, décommentez la ligne suivante :
+  // return;
+}
+
+/************************************************************
+ * Préparation de l'UI : Player masqué par défaut
+ ************************************************************/
+document.querySelector('.player').style.display = 'none';
+
+/************************************************************
+ * Ajustements via paramètres
+ ************************************************************/
 if (customWidth) {
   document.querySelector('.player').style.width = customWidth + 'px';
 }
-
-/** Ajuste l'opacité si demandée **/
 if (opacityParam) {
   const numericVal = parseFloat(opacityParam) / 100;
   if (!isNaN(numericVal) && numericVal >= 0 && numericVal <= 1) {
@@ -39,7 +69,9 @@ if (opacityParam) {
   }
 }
 
-/** Création du client WebSocket (via streamerbot-client) **/
+/************************************************************
+ * Connexion WebSocket (Streamer.bot)
+ ************************************************************/
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -47,27 +79,25 @@ const client = new StreamerbotClient({
   password: 'streamer.bot'
 });
 
-/** Pour éviter de recharger la barre si c'est le même titre **/
 let lastSongName = "";
 
 /************************************************************
- * Écoute de "General.Custom"
+ * client.on('General.Custom', ...)
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
-  // 1) Filtre sur widget
   if (data?.widget !== 'spot2sbPlayer') return;
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 2) noSong => on masque la div .player
+  // noSong => on masque
   if (data.noSong === true) {
     document.querySelector('.player').style.display = 'none';
     return;
   }
 
-  // Sinon, on l'affiche (au cas où elle était cachée)
+  // Sinon, on l'affiche (au cas où elle était masquée)
   document.querySelector('.player').style.display = 'block';
 
-  // 3) Gérer état lecture/pause
+  // Lecture/pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -75,7 +105,7 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // 4) Nouvelle info de piste
+  // Mise à jour piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -83,7 +113,6 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
-    // a) La piste a changé ?
     if (songName !== lastSongName) {
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
@@ -97,7 +126,6 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
-  // Sélections
   const bgBlur         = document.getElementById("bg-blur");
   const coverArt       = document.getElementById("cover-art");
   const trackNameSpan  = document.getElementById("track-name");
@@ -110,7 +138,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   bgBlur.style.backgroundImage   = `url('${albumArtUrl}')`;
   coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
 
-  // Mode disc ?
+  // disc-mode ?
   if (albumParam === 'disc') {
     coverArt.classList.add('disc-mode');
   } else {
@@ -121,53 +149,16 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   trackNameSpan.textContent = songName;
   artistNameEl.textContent  = artistName;
 
-  // Durée & timeSpent
+  // Durée
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
-
-  // On met à jour
   updateBarAndTimer();
 
-  // Stop l'ancien interval
+  // Interval
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
   }
-
-  // Couleurs
-  if (customColor) {
-    // Si l’utilisateur a fourni ?color=xx => on applique partout
-    const colorHex = '#' + customColor;
-    timeBarFill.style.backgroundColor = colorHex;
-    trackNameSpan.style.color        = colorHex;
-    artistNameEl.style.color         = colorHex;
-    timeRemaining.style.color        = colorHex;
-  } else {
-    // Sinon, ColorThief
-    const colorThief = new ColorThief();
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = albumArtUrl;
-
-    img.onload = function() {
-      let [r, g, b] = colorThief.getColor(img);
-
-      // Rendez la couleur plus "vibrante"
-      [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
-      [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
-
-      const barColorArr    = adjustColor(r, g, b, 0.8);
-      const textColorArr   = adjustColor(r, g, b, 1.2);
-
-      // On peut utiliser la même couleur textColorArr pour titre/artiste/timer
-      timeBarFill.style.backgroundColor = rgbString(barColorArr);
-      trackNameSpan.style.color        = rgbString(textColorArr);
-      artistNameEl.style.color         = rgbString(textColorArr);
-      timeRemaining.style.color        = rgbString(textColorArr);
-    };
-  }
-
-  // Interval => barre 100% -> 0%
   isPaused = false;
   currentInterval = setInterval(() => {
     if (!isPaused) {
@@ -180,6 +171,34 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       }
     }
   }, 1000);
+
+  // Couleur
+  if (customColor) {
+    const colorHex = '#' + customColor;
+    timeBarFill.style.backgroundColor = colorHex;
+    trackNameSpan.style.color        = colorHex;
+    artistNameEl.style.color         = colorHex;
+    timeRemaining.style.color        = colorHex;
+  } else {
+    const colorThief = new ColorThief();
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = albumArtUrl;
+
+    img.onload = function() {
+      let [r, g, b] = colorThief.getColor(img);
+      [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
+      [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
+
+      const barColorArr  = adjustColor(r, g, b, 0.8);
+      const textColorArr = adjustColor(r, g, b, 1.2);
+
+      timeBarFill.style.backgroundColor = rgbString(barColorArr);
+      trackNameSpan.style.color        = rgbString(textColorArr);
+      artistNameEl.style.color         = rgbString(textColorArr);
+      timeRemaining.style.color        = rgbString(textColorArr);
+    };
+  }
 
   // Titre défilant
   requestAnimationFrame(() => {
