@@ -41,7 +41,7 @@ if (isWpfMode) {
   // Vérifier via sessionStorage si Spotify a déjà été connecté dans cette session
   const spotifyConnected = sessionStorage.getItem("spotifyConnected");
   if (!spotifyConnected && infoDiv) {
-    infoDiv.textContent = "Please launch Spotify to preview the player (in WPF).";
+    infoDiv.textContent = "Please launch Spotify and play song to preview the player .";
     infoDiv.style.color = "#ff0";
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
