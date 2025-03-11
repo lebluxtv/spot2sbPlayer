@@ -6,6 +6,17 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Message affiché par défaut si aucune musique n'est lue -->
+  <div id="infoDiv" style="
+    color: #fff;
+    text-align: center;
+    font-family: sans-serif;
+    margin-bottom: 20px;
+  ">
+    Veuillez lancer Spotify pour voir apparaître le lecteur.
+  </div>
+
+  <!-- Le lecteur, masqué tant qu’aucune musique n’est détectée -->
   <div class="player" id="player" style="display: none;">
     <!-- Arrière-plan flou -->
     <div class="bg-blur" id="bg-blur"></div>
@@ -44,7 +55,7 @@
   <!-- Librairie ColorThief (optionnelle) -->
   <script src="https://unpkg.com/colorthief/dist/color-thief.umd.js"></script>
 
-  <!-- Script principal -->
+  <!-- Script principal (déplacé dans un autre fichier) -->
   <script src="script.js"></script>
 </body>
 </html>
