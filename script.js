@@ -3,14 +3,14 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, la colorimétrie, etc.
  *
- * Ajout :
+ * Ajouts :
  *  - ?album=disc => pochette ronde + rotation vinyle
  *  - ?opacity=50 => opacité 0.5 sur le .bg-blur
- *  - Player caché par défaut : on l'affiche seulement quand
- *    un payload arrive ET qu'il n'est pas noSong=true
+ *  - Le player est masqué par défaut et s'affiche uniquement
+ *    lorsqu'un payload arrive ET qu'il n'est pas noSong=true
  *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
- *    tant qu'aucun payload n'est reçu. Si un payload arrive,
- *    on efface ce message et on affiche le player.
+ *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
+ *    reçu, le message est effacé et un flag est enregistré dans le localStorage.
  ************************************************************/
 
 /** Variables globales pour la progression **/
@@ -20,26 +20,27 @@ let trackDuration   = 180;
 let isPaused        = false;
 
 /** Récupération des paramètres d'URL **/
-const urlParams   = new URLSearchParams(window.location.search);
-const customWidth = urlParams.get('width');
-const customColor = urlParams.get('color');
-const albumParam  = urlParams.get('album');
-const opacityParam= urlParams.get('opacity');
-const hostApp     = urlParams.get('hostApp'); // "wpf" ?
+const urlParams    = new URLSearchParams(window.location.search);
+const customWidth  = urlParams.get('width');
+const customColor  = urlParams.get('color');
+const albumParam   = urlParams.get('album');
+const opacityParam = urlParams.get('opacity');
+const hostApp      = urlParams.get('hostApp'); // "wpf" ?
 
 /** Sélections d’éléments DOM **/
-const infoDiv   = document.getElementById('infoDiv');
-const playerDiv = document.getElementById('player');
+const infoDiv    = document.getElementById('infoDiv');
+const playerDiv  = document.getElementById('player');
 
-/** Savoir si on est en mode WPF **/
+/** Déterminer si on est en mode WPF **/
 const isWpfMode = (hostApp === "wpf");
 
 /************************************************************
  * 1) Gestion du mode WPF
  ************************************************************/
 if (isWpfMode) {
-  // Mettre un message dans infoDiv (ex. “Please launch Spotify...”) 
-  if (infoDiv) {
+  // Vérifier via localStorage si Spotify a déjà été connecté
+  const spotifyConnected = localStorage.getItem("spotifyConnected");
+  if (!spotifyConnected && infoDiv) {
     infoDiv.textContent = "Please launch Spotify to preview the player (in WPF).";
     infoDiv.style.color = "#ff0";
     infoDiv.style.fontSize = "1.2rem";
@@ -89,7 +90,7 @@ client.on('General.Custom', ({ event, data }) => {
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 4a) noSong => on masque le player
+  // 4a) si noSong === true, masquer le player
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
@@ -97,11 +98,11 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // 4b) Sinon, on a une musique => on efface le message WPF si besoin
-  //     et on affiche le player
+  // 4b) Sinon, dès qu'une musique est reçue, effacer le message WPF
+  // et enregistrer dans le localStorage que Spotify est lancé
   if (isWpfMode && infoDiv) {
-    infoDiv.textContent = "";       // efface le texte
-    // infoDiv.style.display = "none"; // on peut aussi le masquer
+    infoDiv.textContent = ""; // Effacer le message
+    localStorage.setItem("spotifyConnected", "true");
   }
   if (playerDiv) {
     playerDiv.style.display = 'block';
@@ -115,7 +116,7 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // 4d) Mise à jour piste
+  // 4d) Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -136,7 +137,7 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
-  // Sélections
+  // Sélections des éléments
   const bgBlur        = document.getElementById("bg-blur");
   const coverArt      = document.getElementById("cover-art");
   const trackNameSpan = document.getElementById("track-name");
@@ -145,7 +146,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarBg     = document.getElementById("time-bar-bg");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Fond + pochette
+  // Mise à jour de l'arrière-plan et de la pochette
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   }
@@ -158,16 +159,16 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }
 
-  // Titre & artiste
+  // Mise à jour du titre et de l'artiste
   if (trackNameSpan) trackNameSpan.textContent = songName;
   if (artistNameEl)  artistNameEl.textContent  = artistName;
 
-  // Durée
+  // Mise à jour de la durée et de la barre de progression
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
   updateBarAndTimer();
 
-  // Interval
+  // Réinitialisation de l'intervalle si nécessaire
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
@@ -185,7 +186,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
-  // Couleurs
+  // Gestion de la colorimétrie
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
@@ -193,7 +194,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     if (artistNameEl)  artistNameEl.style.color          = colorHex;
     if (timeRemaining) timeRemaining.style.color          = colorHex;
   } else {
-    // ColorThief
+    // Utilisation de ColorThief pour récupérer la couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -214,12 +215,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     };
   }
 
-  // Titre défilant
+  // Mise en place du titre défilant
   requestAnimationFrame(() => {
     setupScrollingTitle();
   });
 
-  // Animations "slide in"
+  // Animations d'apparition ("slide in")
   animateElement(coverArt,     'slide-in-left');
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
