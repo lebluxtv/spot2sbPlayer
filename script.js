@@ -10,7 +10,7 @@
  *    lorsqu'un payload arrive ET qu'il n'est pas noSong=true
  *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
  *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
- *    reçu, le message est effacé et un flag est enregistré dans le localStorage.
+ *    reçu, le message est effacé et un flag est enregistré dans le sessionStorage.
  ************************************************************/
 
 /** Variables globales pour la progression **/
@@ -38,8 +38,8 @@ const isWpfMode = (hostApp === "wpf");
  * 1) Gestion du mode WPF
  ************************************************************/
 if (isWpfMode) {
-  // Vérifier via localStorage si Spotify a déjà été connecté
-  const spotifyConnected = localStorage.getItem("spotifyConnected");
+  // Vérifier via sessionStorage si Spotify a déjà été connecté dans cette session
+  const spotifyConnected = sessionStorage.getItem("spotifyConnected");
   if (!spotifyConnected && infoDiv) {
     infoDiv.textContent = "Please launch Spotify to preview the player (in WPF).";
     infoDiv.style.color = "#ff0";
@@ -90,7 +90,7 @@ client.on('General.Custom', ({ event, data }) => {
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 4a) si noSong === true, masquer le player
+  // 4a) Si noSong est true, on masque le player
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
@@ -98,11 +98,10 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // 4b) Sinon, dès qu'une musique est reçue, effacer le message WPF
-  // et enregistrer dans le localStorage que Spotify est lancé
+  // 4b) Dès qu'une musique est reçue, effacer le message et enregistrer dans sessionStorage
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = ""; // Effacer le message
-    localStorage.setItem("spotifyConnected", "true");
+    sessionStorage.setItem("spotifyConnected", "true");
   }
   if (playerDiv) {
     playerDiv.style.display = 'block';
