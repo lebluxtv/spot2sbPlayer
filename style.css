@@ -6,7 +6,7 @@
 }
 
 body {
-  background: #252525;
+  background: #000; /* ou la couleur que vous voulez */
   font-family: sans-serif;
   color: #fff;
   display: flex;
@@ -18,10 +18,10 @@ body {
 /* Container principal */
 .player {
   position: relative;
-  width: 600px;    /* Valeur par défaut (override via ?width=###) */
+  width: 600px;
   height: 100px;
-  overflow: hidden; 
-  border-radius: 10px; /* corners are rounded */
+  overflow: hidden; /* ensures the background blur is also clipped */
+  border-radius: 10px; /* coins arrondis */
 }
 
 /* Arrière-plan flou / étiré */
@@ -32,7 +32,7 @@ body {
   background-position: center;
   filter: blur(8px);
   transform: scale(1.2);
-  opacity: 0.6; /* default, can be overridden via ?opacity=xx */
+  opacity: 0.6; /* Valeur par défaut (modifiable via JS si ?opacity=xx) */
   z-index: 1;
 }
 
@@ -62,10 +62,10 @@ body {
   background-position: center;
   margin-right: 10px;
   min-width: 80px;
-  flex: 0 0 auto;
+  flex: 0 0 auto; /* pochette fixe */
 }
 
-/* Si l'utilisateur demande album=disc => rendu circulaire + rotation vinyle */
+/* Mode "disque" (arrondi + rotation) */
 .disc-mode {
   border-radius: 50%;
   animation: disc-spin 6s linear infinite;
@@ -82,7 +82,7 @@ body {
   flex-direction: column;
   justify-content: space-between; 
   flex: 1;
-  min-width: 0; 
+  min-width: 0;
 }
 
 /* Titre: on le fait défiler si trop long */
@@ -137,8 +137,8 @@ body {
   left: 0; 
   top: 0;
   height: 100%;
-  width: 100%;
-  background: #0f0; /* départ: 100% -> 0% */
+  width: 100%; /* départ: 100% -> 0% */
+  background: #0f0; /* modifié si ?color=xx est précisé */
   transition: width 0.5s linear;
 }
 
