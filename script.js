@@ -39,7 +39,7 @@ if (hostApp === "wpf") {
   // On vide le body et on met un message
   document.body.innerHTML = "";
   const infoDiv = document.createElement('div');
-  infoDiv.textContent = "Cette page est ouverte depuis l'application WPF !";
+  infoDiv.textContent = "Please launch Spotify to preview the player.";
   infoDiv.style.color = "#ff0";
   infoDiv.style.fontSize = "1.2rem";
   infoDiv.style.padding = "20px";
