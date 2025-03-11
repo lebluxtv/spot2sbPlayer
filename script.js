@@ -10,8 +10,8 @@
  *  - Player caché par défaut : on l'affiche seulement quand
  *    un payload arrive ET qu'il n'est pas noSong=true
  *  - Paramètre ?hostApp=wpf => si détecté, on affiche un
- *    message “Ouvert dans WPF” (ou autre) et on ne montre
- *    pas le player.
+ *    message “Please launch Spotify to preview the player (in WPF).”
+ *    et on masque simplement le lecteur.
  ************************************************************/
 
 /** Interval pour la progression **/
@@ -32,22 +32,26 @@ const hostApp     = urlParams.get('hostApp'); // ex. "wpf"
 
 /************************************************************
  * Vérification du hostApp
- * => Si hostApp="wpf", on affiche un message WPF et on
- *    ne montrera pas le player du tout.
+ * => Si hostApp="wpf", on masque simplement le lecteur
+ *    et on peut afficher un message dans infoDiv, par ex.
  ************************************************************/
 if (hostApp === "wpf") {
-  // On vide le body et on met un message
-  document.body.innerHTML = "";
-  const infoDiv = document.createElement('div');
-  infoDiv.textContent = "Please launch Spotify to preview the player.";
-  infoDiv.style.color = "#ff0";
-  infoDiv.style.fontSize = "1.2rem";
-  infoDiv.style.padding = "20px";
-  document.body.appendChild(infoDiv);
+  // On masque le lecteur (si présent)
+  const player = document.querySelector('.player');
+  if (player) {
+    player.style.display = 'none';
+  }
 
-  // On peut s'arrêter là, plus rien à faire
-  // => Pas de player, pas de WS, etc.
-  // Si c'est la logique voulue, décommentez la ligne suivante :
+  // Optionnel : on affiche un message si on a un infoDiv
+  const infoDiv = document.getElementById('infoDiv');
+  if (infoDiv) {
+    infoDiv.textContent = "Please launch Spotify to preview the player (in WPF).";
+    infoDiv.style.color = "#ff0";
+    infoDiv.style.fontSize = "1.2rem";
+    infoDiv.style.padding = "20px";
+  }
+
+  // Si on veut stopper toute la logique plus loin, on peut faire :
   // return;
 }
 
