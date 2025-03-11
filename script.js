@@ -1,80 +1,76 @@
 /************************************************************
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
- * la barre de progression (100% -> 0%), la colorimétrie,
- * le titre défilant conditionnel, et les animations "slide in".
+ * la barre de progression, la colorimétrie, etc.
  *
  * Ajout :
  *  - ?album=disc => pochette ronde + rotation vinyle
  *  - ?opacity=50 => opacité 0.5 sur le .bg-blur
  *  - Player caché par défaut : on l'affiche seulement quand
  *    un payload arrive ET qu'il n'est pas noSong=true
- *  - Paramètre ?hostApp=wpf => si détecté, on affiche un
- *    message “Please launch Spotify to preview the player (in WPF).”
- *    et on masque simplement le lecteur.
+ *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
+ *    tant qu'aucun payload n'est reçu. Si un payload arrive,
+ *    on efface ce message et on affiche le player.
  ************************************************************/
 
-/** Interval pour la progression **/
+/** Variables globales pour la progression **/
 let currentInterval = null;
-
-/** Variables pour la durée, la progression écoulée et l'état pause **/
-let timeSpent = 0;
-let trackDuration = 180;
-let isPaused = false;
+let timeSpent       = 0;
+let trackDuration   = 180;
+let isPaused        = false;
 
 /** Récupération des paramètres d'URL **/
-const urlParams  = new URLSearchParams(window.location.search);
+const urlParams   = new URLSearchParams(window.location.search);
 const customWidth = urlParams.get('width');
-const customColor = urlParams.get('color');   // ex. "ff0000"
-const albumParam  = urlParams.get('album');   // "disc"
-const opacityParam= urlParams.get('opacity'); // ex. "50" => 0.5
-const hostApp     = urlParams.get('hostApp'); // ex. "wpf"
+const customColor = urlParams.get('color');
+const albumParam  = urlParams.get('album');
+const opacityParam= urlParams.get('opacity');
+const hostApp     = urlParams.get('hostApp'); // "wpf" ?
+
+/** Sélections d’éléments DOM **/
+const infoDiv   = document.getElementById('infoDiv');
+const playerDiv = document.getElementById('player');
+
+/** Savoir si on est en mode WPF **/
+const isWpfMode = (hostApp === "wpf");
 
 /************************************************************
- * Vérification du hostApp
- * => Si hostApp="wpf", on masque simplement le lecteur
- *    et on peut afficher un message dans infoDiv, par ex.
+ * 1) Gestion du mode WPF
  ************************************************************/
-if (hostApp === "wpf") {
-  // On masque le lecteur (si présent)
-  const player = document.querySelector('.player');
-  if (player) {
-    player.style.display = 'none';
-  }
-
-  // Optionnel : on affiche un message si on a un infoDiv
-  const infoDiv = document.getElementById('infoDiv');
+if (isWpfMode) {
+  // Mettre un message dans infoDiv (ex. “Please launch Spotify...”) 
   if (infoDiv) {
     infoDiv.textContent = "Please launch Spotify to preview the player (in WPF).";
     infoDiv.style.color = "#ff0";
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
-
-  // Si on veut stopper toute la logique plus loin, on peut faire :
-  // return;
+  // Le player reste caché tant qu'on n'a pas de payload
 }
 
 /************************************************************
- * Préparation de l'UI : Player masqué par défaut
+ * 2) Préparation de l'UI
+ *    - Player masqué par défaut
+ *    - Ajustements via paramètres (width, opacity)
  ************************************************************/
-document.querySelector('.player').style.display = 'none';
-
-/************************************************************
- * Ajustements via paramètres
- ************************************************************/
-if (customWidth) {
-  document.querySelector('.player').style.width = customWidth + 'px';
+if (playerDiv) {
+  playerDiv.style.display = 'none'; // masqué au départ
+  if (customWidth) {
+    playerDiv.style.width = customWidth + 'px';
+  }
 }
 if (opacityParam) {
   const numericVal = parseFloat(opacityParam) / 100;
   if (!isNaN(numericVal) && numericVal >= 0 && numericVal <= 1) {
-    document.querySelector('.bg-blur').style.opacity = numericVal;
+    const bgBlur = document.querySelector('.bg-blur');
+    if (bgBlur) {
+      bgBlur.style.opacity = numericVal;
+    }
   }
 }
 
 /************************************************************
- * Connexion WebSocket (Streamer.bot)
+ * 3) Connexion WebSocket (Streamer.bot)
  ************************************************************/
 const client = new StreamerbotClient({
   host: '127.0.0.1',
@@ -86,22 +82,32 @@ const client = new StreamerbotClient({
 let lastSongName = "";
 
 /************************************************************
- * client.on('General.Custom', ...)
+ * 4) Écoute de "General.Custom"
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
+
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // noSong => on masque
+  // 4a) noSong => on masque le player
   if (data.noSong === true) {
-    document.querySelector('.player').style.display = 'none';
+    if (playerDiv) {
+      playerDiv.style.display = 'none';
+    }
     return;
   }
 
-  // Sinon, on l'affiche (au cas où elle était masquée)
-  document.querySelector('.player').style.display = 'block';
+  // 4b) Sinon, on a une musique => on efface le message WPF si besoin
+  //     et on affiche le player
+  if (isWpfMode && infoDiv) {
+    infoDiv.textContent = "";       // efface le texte
+    // infoDiv.style.display = "none"; // on peut aussi le masquer
+  }
+  if (playerDiv) {
+    playerDiv.style.display = 'block';
+  }
 
-  // Lecture/pause
+  // 4c) Gérer lecture/pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -109,7 +115,7 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // Mise à jour piste
+  // 4d) Mise à jour piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -130,28 +136,31 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
-  const bgBlur         = document.getElementById("bg-blur");
-  const coverArt       = document.getElementById("cover-art");
-  const trackNameSpan  = document.getElementById("track-name");
-  const artistNameEl   = document.getElementById("artist-name");
-  const timeBarFill    = document.getElementById("time-bar-fill");
-  const timeBarBg      = document.getElementById("time-bar-bg");
-  const timeRemaining  = document.getElementById("time-remaining");
+  // Sélections
+  const bgBlur        = document.getElementById("bg-blur");
+  const coverArt      = document.getElementById("cover-art");
+  const trackNameSpan = document.getElementById("track-name");
+  const artistNameEl  = document.getElementById("artist-name");
+  const timeBarFill   = document.getElementById("time-bar-fill");
+  const timeBarBg     = document.getElementById("time-bar-bg");
+  const timeRemaining = document.getElementById("time-remaining");
 
   // Fond + pochette
-  bgBlur.style.backgroundImage   = `url('${albumArtUrl}')`;
-  coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
-
-  // disc-mode ?
-  if (albumParam === 'disc') {
-    coverArt.classList.add('disc-mode');
-  } else {
-    coverArt.classList.remove('disc-mode');
+  if (bgBlur) {
+    bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
+  }
+  if (coverArt) {
+    coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
+    if (albumParam === 'disc') {
+      coverArt.classList.add('disc-mode');
+    } else {
+      coverArt.classList.remove('disc-mode');
+    }
   }
 
   // Titre & artiste
-  trackNameSpan.textContent = songName;
-  artistNameEl.textContent  = artistName;
+  if (trackNameSpan) trackNameSpan.textContent = songName;
+  if (artistNameEl)  artistNameEl.textContent  = artistName;
 
   // Durée
   trackDuration = durationSec;
@@ -176,14 +185,15 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
-  // Couleur
+  // Couleurs
   if (customColor) {
     const colorHex = '#' + customColor;
-    timeBarFill.style.backgroundColor = colorHex;
-    trackNameSpan.style.color        = colorHex;
-    artistNameEl.style.color         = colorHex;
-    timeRemaining.style.color        = colorHex;
+    if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
+    if (trackNameSpan) trackNameSpan.style.color         = colorHex;
+    if (artistNameEl)  artistNameEl.style.color          = colorHex;
+    if (timeRemaining) timeRemaining.style.color          = colorHex;
   } else {
+    // ColorThief
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -197,10 +207,10 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       const barColorArr  = adjustColor(r, g, b, 0.8);
       const textColorArr = adjustColor(r, g, b, 1.2);
 
-      timeBarFill.style.backgroundColor = rgbString(barColorArr);
-      trackNameSpan.style.color        = rgbString(textColorArr);
-      artistNameEl.style.color         = rgbString(textColorArr);
-      timeRemaining.style.color        = rgbString(textColorArr);
+      if (timeBarFill)   timeBarFill.style.backgroundColor = rgbString(barColorArr);
+      if (trackNameSpan) trackNameSpan.style.color         = rgbString(textColorArr);
+      if (artistNameEl)  artistNameEl.style.color          = rgbString(textColorArr);
+      if (timeRemaining) timeRemaining.style.color          = rgbString(textColorArr);
     };
   }
 
@@ -214,6 +224,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
   animateElement(timeBarBg,    'slide-in-right');
+  animateElement(timeBarFill,  'slide-in-right'); // Optionnel
   animateElement(timeRemaining,'slide-in-right');
 }
 
@@ -235,6 +246,8 @@ function updateBarAndTimer() {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
 
+  if (!timeBarFill || !timeRemaining) return;
+
   const pct = 100 - (timeSpent / trackDuration * 100);
   timeBarFill.style.width = pct + "%";
 
@@ -248,6 +261,7 @@ function updateBarAndTimer() {
 function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
   const span      = document.getElementById('track-name');
+  if (!container || !span) return;
 
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
@@ -270,6 +284,7 @@ function setupScrollingTitle() {
  * animateElement
  ************************************************************/
 function animateElement(element, animationClass) {
+  if (!element) return;
   element.classList.remove(animationClass);
   void element.offsetWidth; // reflow
   element.classList.add(animationClass);
@@ -340,7 +355,7 @@ function makeVibrant(r, g, b, minSat, maxLight) {
 }
 
 /************************************************************
- * rgbToHsl
+ * rgbToHsl / hslToRgb
  ************************************************************/
 function rgbToHsl(r, g, b) {
   r /= 255; 
@@ -357,9 +372,7 @@ function rgbToHsl(r, g, b) {
     s = 0;
   } else {
     const diff = max - min;
-    s = (l > 0.5)
-      ? diff / (2 - max - min)
-      : diff / (max + min);
+    s = (l > 0.5) ? diff / (2 - max - min) : diff / (max + min);
     switch (max) {
       case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
       case g: h = (b - r) / diff + 2; break;
@@ -369,10 +382,6 @@ function rgbToHsl(r, g, b) {
   }
   return [h, s, l];
 }
-
-/************************************************************
- * hslToRgb
- ************************************************************/
 function hslToRgb(h, s, l) {
   if (s === 0) {
     const val = Math.round(l * 255);
