@@ -11,13 +11,7 @@
  *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
  *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
  *    reçu, le message est effacé et un flag est enregistré dans le sessionStorage.
- *  - Le flag est réinitialisé à chaque fermeture/rechargement de la page.
  ************************************************************/
-
-// Réinitialiser le flag à la fermeture ou au rechargement de la page
-window.addEventListener('beforeunload', () => {
-  sessionStorage.removeItem("spotifyConnected");
-});
 
 /** Variables globales pour la progression **/
 let currentInterval = null;
@@ -104,7 +98,7 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // 4b) Dès qu'une musique est reçue, effacer le message et enregistrer dans sessionStorage
+  // 4b) Dès qu'une musique est reçue, on efface le message et on enregistre dans sessionStorage
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = ""; // Effacer le message
     sessionStorage.setItem("spotifyConnected", "true");
