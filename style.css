@@ -27,7 +27,10 @@ body {
 /* Arrière-plan flou / étiré */
 .bg-blur {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-size: cover;
   background-position: center;
   filter: blur(8px);
@@ -40,7 +43,10 @@ body {
 .bg-blur::after {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.8);
   pointer-events: none;
 }
@@ -134,7 +140,7 @@ body {
 
 .time-bar-fill {
   position: absolute;
-  left: 0; 
+  left: 0;
   top: 0;
   height: 100%;
   width: 100%; /* départ: 100% -> 0% */
