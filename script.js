@@ -388,14 +388,17 @@ function handlePopupDisplay() {
   
   const totalDuration = popupDurationSec * 1000;
   
-  // Définition des durées pour chaque phase (en millisecondes)
-  const albumArtInDuration = totalDuration * 0.18;
-  const repositionToCenterDuration = totalDuration * 0.04;
-  const expansionDuration = totalDuration * 0.14;
-  const displayDuration = totalDuration * 0.3;
-  const collapseDuration = totalDuration * 0.14;
-  const repositionToLeftDuration = totalDuration * 0.04;
-  const albumArtOutDuration = totalDuration * 0.16;
+  // Répartir la durée totale en 5 phases :
+  // Phase 1 : Album art slide in depuis la gauche : 20%
+  // Phase 2 : Expansion (stretch in) du fond et de la zone d'info : 15%
+  // Phase 3 : Affichage complet : 30%
+  // Phase 4 : Rétraction (stretch out) du fond et de la zone d'info : 15%
+  // Phase 5 : Album art slide out vers la droite : 20%
+  const albumArtInDuration = totalDuration * 0.20;
+  const expansionDuration = totalDuration * 0.15;
+  const displayDuration   = totalDuration * 0.30;
+  const collapseDuration  = totalDuration * 0.15;
+  const albumArtOutDuration = totalDuration * 0.20;
   
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
@@ -414,35 +417,25 @@ function handlePopupDisplay() {
   coverArt.style.transform = 'translateX(0)';
   coverArt.style.opacity = '1';
   
-  // Phase 1.5 : Repositionnement de l'album art au centre du player
+  // Phase 2 : Expansion des éléments (bgBlur et infoBar) avec transformOrigin défini à 'left center'
   setTimeout(() => {
-    const playerWidth = player.offsetWidth;
-    const albumArtWidth = coverArt.offsetWidth;
-    const centerTranslate = (playerWidth / 2) - (albumArtWidth / 2);
-    coverArt.style.transition = `transform ${repositionToCenterDuration}ms ease-out`;
-    coverArt.style.transform = `translateX(${centerTranslate}px)`;
-  }, albumArtInDuration);
-  
-  // Phase 2 : Expansion du fond (.bg-blur) et de la zone d'info (infoBar)
-  setTimeout(() => {
-    bgBlur.style.transformOrigin = 'center';
-    infoBar.style.transformOrigin = 'center';
+    bgBlur.style.transformOrigin = 'left center';
+    infoBar.style.transformOrigin = 'left center';
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
     infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
-    // Démarrage en scaleX(0) puis passage à scaleX(1)
+    // Commencer en scaleX(0) puis passer à scaleX(1)
     bgBlur.style.transform = 'scaleX(0)';
     infoBar.style.transform = 'scaleX(0)';
     void bgBlur.offsetWidth;
     void infoBar.offsetWidth;
     bgBlur.style.transform = 'scaleX(1)';
     infoBar.style.transform = 'scaleX(1)';
-  }, albumArtInDuration + repositionToCenterDuration);
+  }, albumArtInDuration);
   
-  // Phase 3 : Affichage complet (durée d'attente)
-  const phase3Start = albumArtInDuration + repositionToCenterDuration + expansionDuration;
+  // Phase 3 : Affichage complet pendant displayDuration (aucune action, simplement attendre)
+  const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
   
-  // Phase 4 : Rétraction du fond et de la zone d'info
-  const collapseStartTime = albumArtInDuration + repositionToCenterDuration + expansionDuration + displayDuration;
+  // Phase 4 : Rétraction des éléments (bgBlur et infoBar) vers 0 en scaleX
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
@@ -450,24 +443,16 @@ function handlePopupDisplay() {
     infoBar.style.transform = 'scaleX(0)';
   }, collapseStartTime);
   
-  // Phase 5 : Repositionnement de l'album art vers sa position initiale (à gauche)
-  const repositionToLeftStart = collapseStartTime + collapseDuration;
-  setTimeout(() => {
-    coverArt.style.transition = `transform ${repositionToLeftDuration}ms ease-in`;
-    coverArt.style.transform = 'translateX(0)';
-  }, repositionToLeftStart);
-  
-  // Phase 6 : Album art slide out vers la droite
-  const albumArtSlideOutTime = repositionToLeftStart + repositionToLeftDuration;
+  // Phase 5 : Album art slide out vers la droite
+  const albumArtSlideOutTime = collapseStartTime + collapseDuration;
   setTimeout(() => {
     coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
     coverArt.style.transform = 'translateX(100%)';
     coverArt.style.opacity = '0';
   }, albumArtSlideOutTime);
   
-  // Fin de la séquence : masquer le player après la durée totale
+  // Fin de la séquence : masquer le player à la fin
   setTimeout(() => {
     player.style.display = 'none';
-    // L'album art restera masqué jusqu'à la réception d'une nouvelle musique.
   }, totalDuration);
 }
