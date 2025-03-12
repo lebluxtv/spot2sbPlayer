@@ -144,7 +144,17 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
   trackDuration = durationSec;
   timeSpent = Math.min(progressSec, durationSec);
+
+  // Correction : désactiver la transition du timeBarFill lors du chargement initial
+  if (timeBarFill) {
+    timeBarFill.style.transition = 'none';
+  }
   updateBarAndTimer();
+  setTimeout(() => {
+    if (timeBarFill) {
+      timeBarFill.style.transition = 'width 0.5s linear';
+    }
+  }, 50);
 
   if (currentInterval) {
     clearInterval(currentInterval);
@@ -396,8 +406,8 @@ function handlePopupDisplay() {
   const albumArtOutDuration = totalDuration * 0.2;
   
   // Délais pour infoBar :
-  const delayExpInfo = 500;      // infoBar commence 100ms après bgBlur lors de l'expansion
-  const delayCollapseBG = 500;   // bgBlur commence 100ms après infoBar lors de la contraction
+  const delayExpInfo = 500;      // infoBar commence 500ms après bgBlur lors de l'expansion
+  const delayCollapseBG = 500;   // bgBlur commence 500ms après infoBar lors de la contraction
   
   // Facteur de décalage pour infoBar (en pixels) : ici, on décale de 50% de la largeur de l'album art
   let infoBarShift = 0;
