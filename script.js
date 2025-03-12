@@ -11,34 +11,31 @@
  *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
  *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
  *    reçu, le message est effacé et un flag est enregistré dans le sessionStorage.
+ *  - Paramètre ?popupDuration=XX => lance une animation popup temporaire
  ************************************************************/
 
-/** Variables globales pour la progression **/
+// Variables globales pour la progression
 let currentInterval = null;
-let timeSpent       = 0;
-let trackDuration   = 180;
-let isPaused        = false;
+let timeSpent = 0;
+let trackDuration = 180;
+let isPaused = false;
 
-/** Récupération des paramètres d'URL **/
-const urlParams    = new URLSearchParams(window.location.search);
-const customWidth  = urlParams.get('width');
-const customColor  = urlParams.get('color');
-const albumParam   = urlParams.get('album');
+// Récupération des paramètres d'URL
+const urlParams = new URLSearchParams(window.location.search);
+const customWidth = urlParams.get('width');
+const customColor = urlParams.get('color');
+const albumParam = urlParams.get('album');
 const opacityParam = urlParams.get('opacity');
-const hostApp      = urlParams.get('hostApp'); // "wpf" ?
+const hostApp = urlParams.get('hostApp');
 const popupDurationParam = urlParams.get('popupDuration');
-/** Sélections d’éléments DOM **/
-const infoDiv    = document.getElementById('infoDiv');
-const playerDiv  = document.getElementById('player');
 
-/** Déterminer si on est en mode WPF **/
+// Sélections d’éléments DOM
+const infoDiv = document.getElementById('infoDiv');
+const playerDiv = document.getElementById('player');
+
+// Déterminer si on est en mode WPF
 const isWpfMode = (hostApp === "wpf");
-
-/************************************************************
- * 1) Gestion du mode WPF
- ************************************************************/
 if (isWpfMode) {
-  // Vérifier via sessionStorage si Spotify a déjà été connecté dans cette session
   const spotifyConnected = sessionStorage.getItem("spotifyConnected");
   if (!spotifyConnected && infoDiv) {
     infoDiv.textContent = "Please launch Spotify and play song to preview the player .";
@@ -46,14 +43,9 @@ if (isWpfMode) {
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
-  // Le player reste caché tant qu'on n'a pas de payload
 }
 
-/************************************************************
- * 2) Préparation de l'UI
- *    - Player masqué par défaut
- *    - Ajustements via paramètres (width, opacity)
- ************************************************************/
+// Préparation de l'UI
 if (playerDiv) {
   playerDiv.style.display = 'none'; // masqué au départ
   if (customWidth) {
@@ -70,9 +62,7 @@ if (opacityParam) {
   }
 }
 
-/************************************************************
- * 3) Connexion WebSocket (Streamer.bot)
- ************************************************************/
+// Connexion WebSocket (Streamer.bot)
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -82,9 +72,6 @@ const client = new StreamerbotClient({
 
 let lastSongName = "";
 
-/************************************************************
- * 4) Écoute de "General.Custom"
- ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
 
@@ -100,7 +87,7 @@ client.on('General.Custom', ({ event, data }) => {
 
   // 4b) Dès qu'une musique est reçue, on efface le message et on enregistre dans sessionStorage
   if (isWpfMode && infoDiv) {
-    infoDiv.textContent = ""; // Effacer le message
+    infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
   }
   if (playerDiv) {
@@ -126,6 +113,10 @@ client.on('General.Custom', ({ event, data }) => {
     if (songName !== lastSongName) {
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
+      // Lancer l'animation popup si le paramètre popupDuration est présent
+      if (popupDurationParam) {
+         handlePopupDisplay();
+      }
     } else {
       syncProgress(progressSec);
     }
@@ -224,7 +215,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
   animateElement(timeBarBg,    'slide-in-right');
-  animateElement(timeBarFill,  'slide-in-right'); // Optionnel
+  animateElement(timeBarFill,  'slide-in-right');
   animateElement(timeRemaining,'slide-in-right');
 }
 
@@ -286,7 +277,7 @@ function setupScrollingTitle() {
 function animateElement(element, animationClass) {
   if (!element) return;
   element.classList.remove(animationClass);
-  void element.offsetWidth; // reflow
+  void element.offsetWidth; // forcer le reflow
   element.classList.add(animationClass);
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
@@ -410,7 +401,11 @@ function hslToRgb(h, s, l) {
     Math.round(b * 255)
   ];
 }
-// Fonction complète corrigée pour gérer l'affichage temporaire avec animation
+
+/************************************************************
+ * handlePopupDisplay
+ * Gère l'affichage temporaire avec animation pour le popup
+ ************************************************************/
 function handlePopupDisplay() {
   const popupDuration = parseInt(popupDurationParam);
   if (!popupDuration || isNaN(popupDuration) || popupDuration <= 0) return;
@@ -419,15 +414,15 @@ function handlePopupDisplay() {
   const coverArt = document.getElementById('cover-art');
   const playerContent = document.querySelector('.player-content');
 
-  // Initialisation styles
+  // Initialisation des styles
   player.style.display = 'flex';
   coverArt.style.opacity = '0';
   playerContent.style.opacity = '0';
 
-  // Animation d'entrée Album Art
+  // Animation d'entrée de la pochette
   coverArt.classList.add('slide-in-left');
 
-  // Apparition du contenu après l'animation du coverArt
+  // Apparition du contenu après l'animation de la pochette
   setTimeout(() => {
     coverArt.style.opacity = '1';
     playerContent.style.transition = 'opacity 0.5s ease-in';
@@ -435,10 +430,10 @@ function handlePopupDisplay() {
   }, 1500);
 
   // Calcul du temps d'affichage sans animations
-  const totalAnimationDuration = 3000; // 1.5s entrée + 0.5s fondu + 1s sortie
+  const totalAnimationDuration = 3000; // 1.5s entrée + 0.5s fade in + 1s sortie
   const displayTime = (popupDuration * 1000) - totalAnimationDuration;
 
-  // Disparition du contenu et sortie du coverArt
+  // Disparition du contenu et animation de sortie
   setTimeout(() => {
     playerContent.style.transition = 'opacity 0.5s ease-out';
     playerContent.style.opacity = '0';
@@ -452,5 +447,5 @@ function handlePopupDisplay() {
         coverArt.classList.remove('slide-out-left');
       }, 1500);
     }, 500);
-  }, 1500 + 500 + displayTime); // Délai pour affichage + animations
+  }, 1500 + 500 + displayTime);
 }
