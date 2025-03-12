@@ -3,23 +3,7 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, la colorimétrie, etc.
  *
- * Ajouts :
- *  - ?album=disc => pochette ronde + rotation vinyle
- *  - ?opacity=50 => opacité 0.5 sur le .bg-blur
- *  - Le player est masqué par défaut et s'affiche uniquement
- *    lorsqu'un payload arrive ET qu'il n'est pas noSong=true
- *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
- *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
- *    reçu, le message est effacé et un flag est enregistré dans le sessionStorage.
- *  - Paramètre ?popupDuration=XX => si une nouvelle musique est détectée,
- *    lance une séquence d'animation :
- *      1. L'album art slide in depuis la gauche.
- *      2. Dès son arrivée, le fond (.bg-blur) et le contenu (player-content)
- *         sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
- *      3. Après une durée d'affichage, ces éléments se rétractent (scaleX(0)),
- *         tandis que la pochette reste centrée.
- *      4. Enfin, l'album art slide out vers la droite.
- *      La séquence ne se déclenche que si le payload indique une nouvelle musique.
+ * (Les parties non modifiées sont inchangées.)
  ************************************************************/
 
 // Variables globales pour la progression
@@ -126,7 +110,7 @@ client.on('General.Custom', ({ event, data }) => {
          handlePopupDisplay();
       }
     } else {
-      // Pour la même musique, on se contente de synchroniser la progression
+      // Pour la même musique, synchroniser la progression uniquement
       syncProgress(progressSec);
     }
   }
@@ -144,10 +128,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarBg = document.getElementById("time-bar-bg");
   const timeRemaining = document.getElementById("time-remaining");
 
-  if (bgBlur) {
-    bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
-  }
+  // S'assurer que l'album art est visible pour la nouvelle musique
   if (coverArt) {
+    coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
     if (albumParam === 'disc') {
       coverArt.classList.add('disc-mode');
@@ -393,10 +376,11 @@ function hslToRgb(h, s, l) {
  * handlePopupDisplay
  * Séquence d'animation pour une nouvelle musique (popupDuration en secondes) :
  * 1. Album art slide in depuis la gauche.
- * 2. Une fois l'album art en place, le fond (.bg-blur) et le contenu (player-content)
- *    sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
- * 3. Après une période d'affichage, ces éléments se rétractent (scaleX(0)) sans affecter la pochette.
+ * 2. Une fois l'album art en place, le fond (.bg-blur) et la zone d'info (info-bar)
+ *    sont rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
+ * 3. Après une période d'affichage, ces éléments se rétractent (scaleX(0)) sans affecter l'album art.
  * 4. Enfin, l'album art slide out vers la droite.
+ * L'album art reste masqué après l'animation et ne réapparaît qu'à la réception d'une nouvelle musique.
  ************************************************************/
 function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
@@ -412,7 +396,6 @@ function handlePopupDisplay() {
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
   const bgBlur = document.getElementById('bg-blur');
-  // Pour éviter que l'album art ne soit affecté par le scale, nous ciblons uniquement l'info-bar.
   const infoBar = document.querySelector('.info-bar');
 
   // Afficher le player
@@ -430,7 +413,7 @@ function handlePopupDisplay() {
   setTimeout(() => {
     bgBlur.style.transformOrigin = 'center';
     infoBar.style.transformOrigin = 'center';
-    // Démarrage en scaleX(0) puis animation vers scaleX(1)
+    // Démarrer en scaleX(0) puis animer vers scaleX(1)
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
     infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform = 'scaleX(0)';
@@ -444,7 +427,7 @@ function handlePopupDisplay() {
   const expansionCompleteTime = albumArtInDuration + expansionDuration;
   const collapseStartTime = expansionCompleteTime + displayDuration;
   
-  // Phase 4 : Rétraction des éléments (bgBlur et infoBar uniquement)
+  // Phase 3 : Rétraction des éléments (bgBlur et infoBar uniquement)
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
@@ -452,7 +435,7 @@ function handlePopupDisplay() {
     infoBar.style.transform = 'scaleX(0)';
   }, collapseStartTime);
 
-  // Phase 5 : Album art slide out vers la droite
+  // Phase 4 : Album art slide out vers la droite
   const albumArtSlideOutTime = collapseStartTime + collapseDuration;
   setTimeout(() => {
     coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
@@ -460,11 +443,10 @@ function handlePopupDisplay() {
     coverArt.style.opacity = '0';
   }, albumArtSlideOutTime);
 
-  // Fin de la séquence : masquer le player et réinitialiser les styles de l'album art
+  // Fin de la séquence : masquer le player et l'album art (celui-ci restera masqué jusqu'à une nouvelle musique)
   const totalSequenceTime = albumArtInDuration + expansionDuration + displayDuration + collapseDuration + albumArtOutDuration;
   setTimeout(() => {
     player.style.display = 'none';
-    coverArt.style.transform = '';
-    coverArt.style.opacity = '';
+    coverArt.style.display = 'none';
   }, totalSequenceTime);
 }
