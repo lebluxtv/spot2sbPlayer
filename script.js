@@ -26,7 +26,7 @@ const customColor  = urlParams.get('color');
 const albumParam   = urlParams.get('album');
 const opacityParam = urlParams.get('opacity');
 const hostApp      = urlParams.get('hostApp'); // "wpf" ?
-
+const popupDurationParam = urlParams.get('popupDuration');
 /** Sélections d’éléments DOM **/
 const infoDiv    = document.getElementById('infoDiv');
 const playerDiv  = document.getElementById('player');
@@ -409,4 +409,47 @@ function hslToRgb(h, s, l) {
     Math.round(g * 255),
     Math.round(b * 255)
   ];
+}
+// Fonction pour gérer l'affichage temporaire avec animation
+function handlePopupDisplay() {
+  const popupDuration = parseInt(popupDurationParam);
+  if (!popupDurationParam || isNaN(popupDurationParam) || popupDurationParam <= 0) return;
+
+  const player = document.getElementById('player');
+  const coverArt = document.getElementById('cover-art');
+  const playerContent = document.querySelector('.player-content');
+
+  // Réinitialisation des styles initiaux
+  player.style.display = 'flex';
+  coverArt.style.opacity = 0;
+  playerContent.style.opacity = 0;
+
+  // Début animation album art (slide-in-left)
+  coverArt.classList.add('slide-in-left');
+
+  // Quand l'album art arrive, fade in du reste
+  setTimeout(() => {
+    playerContent.style.transition = 'opacity 1s ease-in';
+    playerContent.style.opacity = '1';
+  }, 1500); // Temps correspondant à l'animation slide-in-left
+
+  // Timer pour le maintien à l'écran puis l'animation de sortie
+  const totalDisplayDuration = popupDuration * 1000;
+  const holdDuration = totalDuration(totalAnimation = 1500 + 1000) < total ? totalDuration - 3000 : 3000;
+
+  setTimeout(() => {
+    // Animation sortie (inverse)
+    playerContent.style.transition = 'opacity 1s ease-out';
+    playerContent.style.opacity = '0';
+
+    setTimeout(() => {
+      coverArt.classList.remove('slide-in-left');
+      coverArt.classList.add('slide-out-left');
+      
+      setTimeout(() => {
+        player.style.display = 'none';
+        coverArt.classList.remove('slide-out-left');
+      }, 1500);
+    }, 1000);
+  }, (popupDurationParam * 1000) - 2500); // Fin de la durée d'affichage moins animations
 }
