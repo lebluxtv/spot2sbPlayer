@@ -4,13 +4,13 @@
  * la barre de progression, la colorimétrie, etc.
  ************************************************************/
 
-// Variables globales pour la progression
+// Variables globales
 let currentInterval = null;
 let timeSpent = 0;
 let trackDuration = 180;
 let isPaused = false;
 
-// Récupération des paramètres d'URL
+/** Récupération des paramètres d'URL **/
 const urlParams    = new URLSearchParams(window.location.search);
 const customWidth  = urlParams.get('width');
 const customColor  = urlParams.get('color');
@@ -19,11 +19,11 @@ const opacityParam = urlParams.get('opacity');
 const hostApp      = urlParams.get('hostApp');
 const popupDurationParam = urlParams.get('popupDuration');
 
-// Sélections d’éléments DOM
+/** Sélection d’éléments DOM **/
 const infoDiv   = document.getElementById('infoDiv');
 const playerDiv = document.getElementById('player');
 
-// Déterminer si on est en mode WPF
+// Mode WPF ?
 const isWpfMode = (hostApp === "wpf");
 if (isWpfMode) {
   const spotifyConnected = sessionStorage.getItem("spotifyConnected");
@@ -35,9 +35,10 @@ if (isWpfMode) {
   }
 }
 
-// Préparation de l'UI
+// Préparation UI
 if (playerDiv) {
-  playerDiv.style.display = 'none'; // masqué au départ
+  // Au départ, on le cache avec display: none
+  playerDiv.style.display = 'none';
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
   }
@@ -62,7 +63,9 @@ const client = new StreamerbotClient({
 
 let lastSongName = "";
 
-// Écoute de l'événement General.Custom
+/************************************************************
+ * Réception de l'événement "General.Custom"
+ ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
 
@@ -76,17 +79,18 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // Mode WPF : effacer le message
+  // Mode WPF
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
   }
+
   // Afficher le player
   if (playerDiv) {
     playerDiv.style.display = 'block';
   }
 
-  // Lecture/pause
+  // Lecture / Pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -94,7 +98,7 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // Mise à jour piste
+  // Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -106,11 +110,12 @@ client.on('General.Custom', ({ event, data }) => {
     if (songName !== lastSongName) {
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
+      // Lancer l'animation popup si popupDuration est défini
       if (popupDurationParam) {
         handlePopupDisplay();
       }
     } else {
-      // Même musique : on synchronise juste la progression
+      // Même musique => on synchronise la progression
       syncProgress(progressSec);
     }
   }
@@ -128,7 +133,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarBg     = document.getElementById("time-bar-bg");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Afficher la pochette
+  // Pochette
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
@@ -138,7 +143,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       coverArt.classList.remove('disc-mode');
     }
   }
-  // Titre / artiste
+  // Titre & artiste
   if (trackNameSpan) trackNameSpan.textContent = songName;
   if (artistNameEl)  artistNameEl.textContent  = artistName;
 
@@ -146,17 +151,20 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
 
-  // 1) Désactiver la transition de la barre
+  // 1) On retire temporairement la transition du timeBarFill
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
-  // 2) Mettre à jour immédiatement la barre (elle sera à la bonne taille dès le début)
+
+  // 2) On met à jour immédiatement la barre => bonne taille dès le début
   updateBarAndTimer();
-  // 3) Forcer un reflow
+
+  // 3) On force un reflow
   if (timeBarFill) {
     void timeBarFill.offsetWidth;
   }
-  // 4) Réactiver la transition (pour les prochains changements)
+
+  // 4) On réactive la transition pour les prochaines modifications
   if (timeBarFill) {
     timeBarFill.style.transition = 'width 0.5s linear';
   }
@@ -179,7 +187,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
-  // Couleurs
+  // Couleur
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
@@ -353,6 +361,7 @@ function rgbToHsl(r, g, b) {
   const min = Math.min(r, g, b);
   let h, s;
   let l = (max + min) / 2;
+
   if (max === min) {
     h = 0;
     s = 0;
@@ -381,7 +390,6 @@ function hslToRgb(h, s, l) {
     if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
     return p;
   };
-
   const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
   const p = 2*l - q;
 
@@ -397,33 +405,34 @@ function hslToRgb(h, s, l) {
 
 /************************************************************
  * handlePopupDisplay
- * Gère l'animation stretch in/out si popupDurationParam est défini
+ * Séquence d'animation "stretch" (scaleX) si popupDuration est défini
  ************************************************************/
 function handlePopupDisplay() {
-  // Votre code d'animation, inchangé (stretch in/out).
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
-  
+
+  // Votre code "stretch in/out" inchangé, par ex. :
   const totalDuration       = popupDurationSec * 1000;
   const albumArtInDuration  = totalDuration * 0.2;
   const expansionDuration   = totalDuration * 0.15;
   const displayDuration     = totalDuration * 0.3;
   const collapseDuration    = totalDuration * 0.15;
   const albumArtOutDuration = totalDuration * 0.2;
-  
-  const delayExpInfo    = 500;    
-  const delayCollapseBG = 500;    
+
+  const delayExpInfo    = 500;
+  const delayCollapseBG = 500;
   let infoBarShift      = 0;
-  
+
   const player   = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
   const bgBlur   = document.getElementById('bg-blur');
   const infoBar  = document.querySelector('.info-bar');
 
+  // On s'assure que le player est affiché
   player.style.display = 'block';
   coverArt.style.display = 'block';
 
-  // Phase 1 : Slide in
+  // Phase 1 : Slide in album art
   coverArt.style.transition = `transform ${albumArtInDuration}ms ease-out, opacity ${albumArtInDuration}ms ease-out`;
   coverArt.style.transform  = 'translateX(-100%)';
   coverArt.style.opacity    = '0';
@@ -431,19 +440,21 @@ function handlePopupDisplay() {
   coverArt.style.transform  = 'translateX(0)';
   coverArt.style.opacity    = '1';
 
-  // Phase 2 : expansion
+  // Phase 2 : Expansion (bgBlur & infoBar)
   setTimeout(() => {
     const albumArtRect = coverArt.getBoundingClientRect();
     const playerRect   = player.getBoundingClientRect();
     const offsetX      = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
     const origin       = `${offsetX}px center`;
-    
+
+    // bgBlur
     bgBlur.style.transformOrigin = origin;
     bgBlur.style.transition      = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform       = 'scaleX(0)';
     void bgBlur.offsetWidth;
     bgBlur.style.transform       = 'scaleX(1)';
-    
+
+    // infoBarShift
     infoBarShift = albumArtRect.width * 0.5;
   }, albumArtInDuration);
 
@@ -453,7 +464,7 @@ function handlePopupDisplay() {
     const playerRect   = player.getBoundingClientRect();
     const offsetX      = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
     const origin       = `${offsetX}px center`;
-    
+
     infoBar.style.transformOrigin = origin;
     infoBar.style.transition      = `transform ${expansionDuration}ms ease-out`;
     infoBar.style.transform       = `translateX(-${infoBarShift}px) scaleX(0)`;
@@ -461,20 +472,20 @@ function handlePopupDisplay() {
     infoBar.style.transform       = 'translateX(0) scaleX(1)';
   }, albumArtInDuration + delayExpInfo);
 
-  // Phase 3 : affichage
+  // Phase 3 : Affichage
   const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
-  
-  // Phase 4 : rétraction
+
+  // Phase 4 : Rétraction
   setTimeout(() => {
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
     infoBar.style.transform  = `translateX(-${infoBarShift}px) scaleX(0)`;
   }, collapseStartTime);
-  
+
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     bgBlur.style.transform  = 'scaleX(0)';
   }, collapseStartTime + delayCollapseBG);
-  
+
   // Phase 5 : Slide out
   const albumArtSlideOutTime = collapseStartTime + collapseDuration;
   setTimeout(() => {
