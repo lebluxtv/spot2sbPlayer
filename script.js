@@ -11,7 +11,13 @@
  *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
  *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
  *    reçu, le message est effacé et un flag est enregistré dans le sessionStorage.
- *  - Paramètre ?popupDuration=XX => lance une animation popup temporaire
+ *  - Paramètre ?popupDuration=XX => lance une animation popup temporaire :
+ *      1. L'album art arrive en slide in depuis la gauche.
+ *      2. Le background (.bg-blur) et le contenu (titre, artiste, barre, timer)
+ *         sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
+ *      3. Après un délai d'affichage, les éléments se rétractent (scaleX(0)),
+ *         laissant l'album art seul, qui se retire ensuite en slide out vers la droite.
+ *      La durée totale de la séquence est définie par popupDuration (en secondes).
  ************************************************************/
 
 // Variables globales pour la progression
@@ -77,7 +83,7 @@ client.on('General.Custom', ({ event, data }) => {
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // 4a) Si noSong est true, on masque le player
+  // Si noSong est true, masquer le player
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
@@ -85,7 +91,7 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // 4b) Dès qu'une musique est reçue, on efface le message et on enregistre dans sessionStorage
+  // Dès qu'une musique est reçue, effacer le message et enregistrer dans sessionStorage
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
@@ -94,7 +100,7 @@ client.on('General.Custom', ({ event, data }) => {
     playerDiv.style.display = 'block';
   }
 
-  // 4c) Gérer lecture/pause
+  // Gérer lecture/pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -102,7 +108,7 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // 4d) Mise à jour de la piste
+  // Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -127,16 +133,14 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
-  // Sélections des éléments
-  const bgBlur        = document.getElementById("bg-blur");
-  const coverArt      = document.getElementById("cover-art");
+  const bgBlur = document.getElementById("bg-blur");
+  const coverArt = document.getElementById("cover-art");
   const trackNameSpan = document.getElementById("track-name");
-  const artistNameEl  = document.getElementById("artist-name");
-  const timeBarFill   = document.getElementById("time-bar-fill");
-  const timeBarBg     = document.getElementById("time-bar-bg");
+  const artistNameEl = document.getElementById("artist-name");
+  const timeBarFill = document.getElementById("time-bar-fill");
+  const timeBarBg = document.getElementById("time-bar-bg");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // Mise à jour de l'arrière-plan et de la pochette
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   }
@@ -149,16 +153,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }
 
-  // Mise à jour du titre et de l'artiste
   if (trackNameSpan) trackNameSpan.textContent = songName;
   if (artistNameEl)  artistNameEl.textContent  = artistName;
 
-  // Mise à jour de la durée et de la barre de progression
   trackDuration = durationSec;
-  timeSpent     = Math.min(progressSec, durationSec);
+  timeSpent = Math.min(progressSec, durationSec);
   updateBarAndTimer();
 
-  // Réinitialisation de l'intervalle si nécessaire
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
@@ -176,7 +177,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
-  // Gestion de la colorimétrie
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
@@ -184,20 +184,16 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     if (artistNameEl)  artistNameEl.style.color          = colorHex;
     if (timeRemaining) timeRemaining.style.color          = colorHex;
   } else {
-    // Utilisation de ColorThief pour récupérer la couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = albumArtUrl;
-
     img.onload = function() {
       let [r, g, b] = colorThief.getColor(img);
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
-
-      const barColorArr  = adjustColor(r, g, b, 0.8);
+      const barColorArr = adjustColor(r, g, b, 0.8);
       const textColorArr = adjustColor(r, g, b, 1.2);
-
       if (timeBarFill)   timeBarFill.style.backgroundColor = rgbString(barColorArr);
       if (trackNameSpan) trackNameSpan.style.color         = rgbString(textColorArr);
       if (artistNameEl)  artistNameEl.style.color          = rgbString(textColorArr);
@@ -205,18 +201,18 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     };
   }
 
-  // Mise en place du titre défilant
   requestAnimationFrame(() => {
     setupScrollingTitle();
   });
 
-  // Animations d'apparition ("slide in")
-  animateElement(coverArt,     'slide-in-left');
+  // L'album art effectue son slide in depuis la gauche
+  animateElement(coverArt, 'slide-in-left');
+  // Les autres éléments sont animés via handlePopupDisplay
+  animateElement(timeBarBg, 'slide-in-right');
+  animateElement(timeBarFill, 'slide-in-right');
+  animateElement(timeRemaining, 'slide-in-right');
   animateElement(artistNameEl, 'slide-in-top');
-  animateElement(trackNameSpan,'slide-in-top');
-  animateElement(timeBarBg,    'slide-in-right');
-  animateElement(timeBarFill,  'slide-in-right');
-  animateElement(timeRemaining,'slide-in-right');
+  animateElement(trackNameSpan, 'slide-in-top');
 }
 
 /************************************************************
@@ -234,14 +230,11 @@ function syncProgress(progressSec) {
  * updateBarAndTimer
  ************************************************************/
 function updateBarAndTimer() {
-  const timeBarFill   = document.getElementById("time-bar-fill");
+  const timeBarFill = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
-
   if (!timeBarFill || !timeRemaining) return;
-
   const pct = 100 - (timeSpent / trackDuration * 100);
   timeBarFill.style.width = pct + "%";
-
   const timeLeft = trackDuration - timeSpent;
   timeRemaining.textContent = formatTime(timeLeft);
 }
@@ -251,16 +244,13 @@ function updateBarAndTimer() {
  ************************************************************/
 function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
-  const span      = document.getElementById('track-name');
+  const span = document.getElementById('track-name');
   if (!container || !span) return;
-
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
-
   requestAnimationFrame(() => {
     const containerWidth = container.offsetWidth;
-    const textWidth      = span.scrollWidth;
-
+    const textWidth = span.scrollWidth;
     if (textWidth > containerWidth) {
       span.style.paddingLeft = containerWidth + 'px';
       span.style.animation = 'marquee 10s linear infinite';
@@ -277,7 +267,7 @@ function setupScrollingTitle() {
 function animateElement(element, animationClass) {
   if (!element) return;
   element.classList.remove(animationClass);
-  void element.offsetWidth; // forcer le reflow
+  void element.offsetWidth;
   element.classList.add(animationClass);
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
@@ -300,7 +290,7 @@ function resumeProgressBar() {
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return `${m}:${s < 10 ? "0"+s : s}`;
+  return `${m}:${s < 10 ? "0" + s : s}`;
 }
 
 /************************************************************
@@ -349,15 +339,13 @@ function makeVibrant(r, g, b, minSat, maxLight) {
  * rgbToHsl / hslToRgb
  ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255; 
-  g /= 255; 
+  r /= 255;
+  g /= 255;
   b /= 255;
-
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h, s;
   let l = (max + min) / 2;
-
   if (max === min) {
     h = 0;
     s = 0;
@@ -378,7 +366,6 @@ function hslToRgb(h, s, l) {
     const val = Math.round(l * 255);
     return [val, val, val];
   }
-
   const hue2rgb = (p, q, t) => {
     if (t < 0) t += 1;
     if (t > 1) t -= 1;
@@ -387,14 +374,11 @@ function hslToRgb(h, s, l) {
     if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
     return p;
   };
-
-  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
-  const p = 2*l - q;
-
+  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l * s);
+  const p = 2 * l - q;
   const r = hue2rgb(p, q, h + 1/3);
   const g = hue2rgb(p, q, h);
   const b = hue2rgb(p, q, h - 1/3);
-
   return [
     Math.round(r * 255),
     Math.round(g * 255),
@@ -404,48 +388,85 @@ function hslToRgb(h, s, l) {
 
 /************************************************************
  * handlePopupDisplay
- * Gère l'affichage temporaire avec animation pour le popup
+ * Animation du popup selon popupDuration :
+ * 1. Album art slide in depuis la gauche (durée: 20% du total).
+ * 2. Dès son arrivée, le background (.bg-blur) et le contenu (player-content)
+ *    sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)) sur 15%.
+ * 3. Affichage complet pendant 30% du temps.
+ * 4. Rétraction des éléments vers le centre sur 15%.
+ * 5. Album art slide out vers la droite sur 20%.
  ************************************************************/
 function handlePopupDisplay() {
-  const popupDuration = parseInt(popupDurationParam);
-  if (!popupDuration || isNaN(popupDuration) || popupDuration <= 0) return;
+  const popupDurationSec = parseFloat(popupDurationParam);
+  if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
+  
+  const totalDuration = popupDurationSec * 1000;
+  const albumArtInDuration = totalDuration * 0.2;
+  const expansionDuration = totalDuration * 0.15;
+  const displayDuration = totalDuration * 0.3;
+  const collapseDuration = totalDuration * 0.15;
+  const albumArtOutDuration = totalDuration * 0.2;
 
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
+  const bgBlur = document.getElementById('bg-blur');
   const playerContent = document.querySelector('.player-content');
 
-  // Initialisation des styles
+  // Afficher le player
   player.style.display = 'flex';
-  coverArt.style.opacity = '0';
-  playerContent.style.opacity = '0';
 
-  // Animation d'entrée de la pochette
-  coverArt.classList.add('slide-in-left');
+  // Phase 1 : Album art slide in depuis la gauche
+  coverArt.style.transition = `transform ${albumArtInDuration}ms ease-out, opacity ${albumArtInDuration}ms ease-out`;
+  coverArt.style.transform = 'translateX(-100%)';
+  coverArt.style.opacity = '1';
+  void coverArt.offsetWidth;
+  coverArt.style.transform = 'translateX(0)';
 
-  // Apparition du contenu après l'animation de la pochette
+  // Phase 2 : Après album art in, expansion des éléments
   setTimeout(() => {
-    coverArt.style.opacity = '1';
-    playerContent.style.transition = 'opacity 0.5s ease-in';
-    playerContent.style.opacity = '1';
-  }, 1500);
+    // Initialiser bgBlur et playerContent en état rétracté
+    bgBlur.style.transformOrigin = 'center';
+    playerContent.style.transformOrigin = 'center';
+    // Appliquer un scaleX(0)
+    bgBlur.style.transform = 'scaleX(0)';
+    playerContent.style.transform = 'scaleX(0)';
+    // Forcer le reflow
+    void bgBlur.offsetWidth;
+    void playerContent.offsetWidth;
+    // Transition d'expansion sur expansionDuration
+    bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
+    playerContent.style.transition = `transform ${expansionDuration}ms ease-out`;
+    bgBlur.style.transform = 'scaleX(1)';
+    playerContent.style.transform = 'scaleX(1)';
+  }, albumArtInDuration);
 
-  // Calcul du temps d'affichage sans animations
-  const totalAnimationDuration = 3000; // 1.5s entrée + 0.5s fade in + 1s sortie
-  const displayTime = (popupDuration * 1000) - totalAnimationDuration;
-
-  // Disparition du contenu et animation de sortie
+  // Phase 3 : Affichage complet pendant displayDuration
+  const expansionCompleteTime = albumArtInDuration + expansionDuration;
+  const collapseStartTime = expansionCompleteTime + displayDuration;
+  
+  // Phase 4 : Rétraction des éléments vers le centre
   setTimeout(() => {
-    playerContent.style.transition = 'opacity 0.5s ease-out';
-    playerContent.style.opacity = '0';
+    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
+    playerContent.style.transition = `transform ${collapseDuration}ms ease-in`;
+    bgBlur.style.transform = 'scaleX(0)';
+    playerContent.style.transform = 'scaleX(0)';
+  }, collapseStartTime);
 
-    setTimeout(() => {
-      coverArt.classList.remove('slide-in-left');
-      coverArt.classList.add('slide-out-left');
+  // Phase 5 : Album art slide out vers la droite
+  const albumArtSlideOutTime = collapseStartTime + collapseDuration;
+  setTimeout(() => {
+    coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
+    coverArt.style.transform = 'translateX(100%)';
+    coverArt.style.opacity = '0';
+  }, albumArtSlideOutTime);
 
-      setTimeout(() => {
-        player.style.display = 'none';
-        coverArt.classList.remove('slide-out-left');
-      }, 1500);
-    }, 500);
-  }, 1500 + 500 + displayTime);
+  // Masquer le player à la fin de la séquence
+  const totalSequenceTime = albumArtInDuration + expansionDuration + displayDuration + collapseDuration + albumArtOutDuration;
+  setTimeout(() => {
+    player.style.display = 'none';
+    // Réinitialiser les transformations pour un futur appel
+    coverArt.style.transform = '';
+    bgBlur.style.transform = '';
+    playerContent.style.transform = '';
+  }, totalSequenceTime);
 }
