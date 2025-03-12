@@ -2,8 +2,6 @@
  * script.js
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, la colorimétrie, etc.
- *
- * (Les parties non modifiées sont inchangées.)
  ************************************************************/
 
 // Variables globales pour la progression
@@ -12,20 +10,19 @@ let timeSpent = 0;
 let trackDuration = 180;
 let isPaused = false;
 
-// Récupération des paramètres d'URL
+/** Récupération des paramètres d'URL **/
 const urlParams = new URLSearchParams(window.location.search);
-const customWidth = urlParams.get('width');
-const customColor = urlParams.get('color');
-const albumParam = urlParams.get('album');
+const customWidth  = urlParams.get('width');
+const customColor  = urlParams.get('color');
+const albumParam   = urlParams.get('album');
 const opacityParam = urlParams.get('opacity');
-const hostApp = urlParams.get('hostApp');
+const hostApp      = urlParams.get('hostApp');
 const popupDurationParam = urlParams.get('popupDuration');
 
-// Sélections d’éléments DOM
-const infoDiv = document.getElementById('infoDiv');
+const infoDiv   = document.getElementById('infoDiv');
 const playerDiv = document.getElementById('player');
 
-// Déterminer si on est en mode WPF
+// Mode WPF ?
 const isWpfMode = (hostApp === "wpf");
 if (isWpfMode) {
   const spotifyConnected = sessionStorage.getItem("spotifyConnected");
@@ -37,9 +34,13 @@ if (isWpfMode) {
   }
 }
 
-// Préparation de l'UI
+// Préparation UI
 if (playerDiv) {
-  playerDiv.style.display = 'none'; // masqué au départ
+  // On conserve le player dans le layout (pas de display:none)
+  // On le masque par défaut en opacity:0
+  playerDiv.style.display = 'flex';
+  playerDiv.style.opacity = '0';
+  playerDiv.style.pointerEvents = 'none';
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
   }
@@ -54,7 +55,7 @@ if (opacityParam) {
   }
 }
 
-// Connexion WebSocket (Streamer.bot)
+// Connexion WebSocket
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -62,31 +63,33 @@ const client = new StreamerbotClient({
   //password: 'streamer.bot'
 });
 
-let lastSongName = ""; // Sert à comparer et détecter une nouvelle musique
+let lastSongName = ""; // Pour comparer et détecter une nouvelle musique
 
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // Si noSong est true, masquer le player
+  // noSong => on masque en opacity
   if (data.noSong === true) {
     if (playerDiv) {
-      playerDiv.style.display = 'none';
+      playerDiv.style.opacity = '0';
+      playerDiv.style.pointerEvents = 'none';
     }
     return;
   }
 
-  // Dès qu'une musique est reçue, effacer le message et enregistrer dans sessionStorage
+  // Si on reçoit une musique, on affiche le player
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
   }
   if (playerDiv) {
-    playerDiv.style.display = 'block';
+    playerDiv.style.opacity = '1';
+    playerDiv.style.pointerEvents = 'auto';
   }
 
-  // Gérer lecture/pause
+  // Lecture / pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -102,15 +105,14 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
-    // Déclencher une animation uniquement en cas de nouvelle musique
+    // Déclencher une animation uniquement si nouvelle musique
     if (songName !== lastSongName) {
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
       if (popupDurationParam) {
-         handlePopupDisplay();
+        handlePopupDisplay();
       }
     } else {
-      // Pour la même musique, synchroniser la progression uniquement
       syncProgress(progressSec);
     }
   }
@@ -120,15 +122,15 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
-  const bgBlur = document.getElementById("bg-blur");
-  const coverArt = document.getElementById("cover-art");
+  const bgBlur        = document.getElementById("bg-blur");
+  const coverArt      = document.getElementById("cover-art");
   const trackNameSpan = document.getElementById("track-name");
-  const artistNameEl = document.getElementById("artist-name");
-  const timeBarFill = document.getElementById("time-bar-fill");
-  const timeBarBg = document.getElementById("time-bar-bg");
+  const artistNameEl  = document.getElementById("artist-name");
+  const timeBarFill   = document.getElementById("time-bar-fill");
+  const timeBarBg     = document.getElementById("time-bar-bg");
   const timeRemaining = document.getElementById("time-remaining");
 
-  // S'assurer que l'album art est visible pour la nouvelle musique
+  // Mise à jour de l'album art
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
@@ -138,24 +140,28 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       coverArt.classList.remove('disc-mode');
     }
   }
-
+  // Titre et artiste
   if (trackNameSpan) trackNameSpan.textContent = songName;
   if (artistNameEl)  artistNameEl.textContent  = artistName;
 
+  // Durée et progression
   trackDuration = durationSec;
   timeSpent = Math.min(progressSec, durationSec);
 
-  // Correction : désactiver la transition du timeBarFill lors du chargement initial
+  // Désactiver la transition initiale de la barre
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
   updateBarAndTimer();
+
+  // Réactiver la transition après un court délai
   setTimeout(() => {
     if (timeBarFill) {
       timeBarFill.style.transition = 'width 0.5s linear';
     }
-  }, 0);
+  }, 600); // Ajustez ce délai si besoin
 
+  // Intervalle de progression
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
@@ -173,6 +179,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
+  // Color Thief ou couleur custom
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
@@ -188,8 +195,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       let [r, g, b] = colorThief.getColor(img);
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
-      const barColorArr = adjustColor(r, g, b, 0.8);
+      const barColorArr  = adjustColor(r, g, b, 0.8);
       const textColorArr = adjustColor(r, g, b, 1.2);
+
       if (timeBarFill)   timeBarFill.style.backgroundColor = rgbString(barColorArr);
       if (trackNameSpan) trackNameSpan.style.color         = rgbString(textColorArr);
       if (artistNameEl)  artistNameEl.style.color          = rgbString(textColorArr);
@@ -201,14 +209,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     setupScrollingTitle();
   });
 
-  // L'album art arrive avec un slide in depuis la gauche
-  animateElement(coverArt, 'slide-in-left');
-  // Les autres éléments sont mis à jour normalement
-  animateElement(timeBarBg, 'slide-in-right');
-  animateElement(timeBarFill, 'slide-in-right');
-  animateElement(timeRemaining, 'slide-in-right');
+  // Animations d'arrivée
+  animateElement(coverArt,     'slide-in-left');
+  animateElement(timeBarBg,    'slide-in-right');
+  animateElement(timeBarFill,  'slide-in-right');
+  animateElement(timeRemaining,'slide-in-right');
   animateElement(artistNameEl, 'slide-in-top');
-  animateElement(trackNameSpan, 'slide-in-top');
+  animateElement(trackNameSpan,'slide-in-top');
 }
 
 /************************************************************
@@ -226,11 +233,13 @@ function syncProgress(progressSec) {
  * updateBarAndTimer
  ************************************************************/
 function updateBarAndTimer() {
-  const timeBarFill = document.getElementById("time-bar-fill");
+  const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
   if (!timeBarFill || !timeRemaining) return;
+
   const pct = 100 - (timeSpent / trackDuration * 100);
   timeBarFill.style.width = pct + "%";
+
   const timeLeft = trackDuration - timeSpent;
   timeRemaining.textContent = formatTime(timeLeft);
 }
@@ -240,13 +249,14 @@ function updateBarAndTimer() {
  ************************************************************/
 function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
-  const span = document.getElementById('track-name');
+  const span      = document.getElementById('track-name');
   if (!container || !span) return;
+
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
   requestAnimationFrame(() => {
     const containerWidth = container.offsetWidth;
-    const textWidth = span.scrollWidth;
+    const textWidth      = span.scrollWidth;
     if (textWidth > containerWidth) {
       span.style.paddingLeft = containerWidth + 'px';
       span.style.animation = 'marquee 10s linear infinite';
@@ -263,7 +273,7 @@ function setupScrollingTitle() {
 function animateElement(element, animationClass) {
   if (!element) return;
   element.classList.remove(animationClass);
-  void element.offsetWidth;
+  void element.offsetWidth; 
   element.classList.add(animationClass);
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
@@ -286,7 +296,7 @@ function resumeProgressBar() {
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return `${m}:${s < 10 ? "0" + s : s}`;
+  return `${m}:${s < 10 ? "0"+s : s}`;
 }
 
 /************************************************************
@@ -335,13 +345,14 @@ function makeVibrant(r, g, b, minSat, maxLight) {
  * rgbToHsl / hslToRgb
  ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255;
-  g /= 255;
+  r /= 255; 
+  g /= 255; 
   b /= 255;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h, s;
   let l = (max + min) / 2;
+
   if (max === min) {
     h = 0;
     s = 0;
@@ -370,11 +381,14 @@ function hslToRgb(h, s, l) {
     if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
     return p;
   };
-  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l * s);
-  const p = 2 * l - q;
+
+  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
+  const p = 2*l - q;
+
   const r = hue2rgb(p, q, h + 1/3);
   const g = hue2rgb(p, q, h);
   const b = hue2rgb(p, q, h - 1/3);
+
   return [
     Math.round(r * 255),
     Math.round(g * 255),
@@ -384,111 +398,105 @@ function hslToRgb(h, s, l) {
 
 /************************************************************
  * handlePopupDisplay
- * Séquence d'animation pour une nouvelle musique (popupDuration en secondes) :
- * 1. L'album art slide in depuis la gauche (restant à sa position initiale, côté gauche).
- * 2. Le fond (.bg-blur) et la zone d'info (infoBar) s'étirent (stretch) depuis un point d'origine
- *    calculé à partir du centre de l'album art (dans sa position initiale).
- *    Pour infoBar, l'animation d'expansion commence avec un léger décalage :
- *    elle démarre en translateX(-[infoBarShift]) scaleX(0) puis passe à translateX(0) scaleX(1).
- * 3. Après une période d'affichage, infoBar se rétracte en se décalant vers la gauche (translateX(-[infoBarShift]) scaleX(0))
- *    tandis que bgBlur se rétracte ensuite.
- * 4. Enfin, l'album art slide out vers la droite.
+ * Séquence d'animation "popup" (popupDuration en secondes).
  ************************************************************/
 function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
-  
-  const totalDuration = popupDurationSec * 1000;
+
+  const totalDuration      = popupDurationSec * 1000;
   const albumArtInDuration = totalDuration * 0.2;
-  const expansionDuration = totalDuration * 0.15;
-  const displayDuration = totalDuration * 0.3;
-  const collapseDuration = totalDuration * 0.15;
-  const albumArtOutDuration = totalDuration * 0.2;
-  
-  // Délais pour infoBar :
-  const delayExpInfo = 500;      // infoBar commence 500ms après bgBlur lors de l'expansion
-  const delayCollapseBG = 500;   // bgBlur commence 500ms après infoBar lors de la contraction
-  
-  // Facteur de décalage pour infoBar (en pixels) : ici, on décale de 50% de la largeur de l'album art
-  let infoBarShift = 0;
-  
-  const player = document.getElementById('player');
+  const expansionDuration  = totalDuration * 0.15;
+  const displayDuration    = totalDuration * 0.3;
+  const collapseDuration   = totalDuration * 0.15;
+  const albumArtOutDuration= totalDuration * 0.2;
+
+  const delayExpInfo    = 500;
+  const delayCollapseBG = 500;
+  let infoBarShift      = 0;
+
+  const player   = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
-  const bgBlur = document.getElementById('bg-blur');
-  const infoBar = document.querySelector('.info-bar');
-  
-  // Afficher le player et l'album art (positionné sur le côté gauche)
-  player.style.display = 'flex';
+  const bgBlur   = document.getElementById('bg-blur');
+  const infoBar  = document.querySelector('.info-bar');
+
+  // Assurer que le player est visible (on travaille en opacity)
+  player.style.opacity = '1';
+  player.style.pointerEvents = 'auto';
   coverArt.style.display = 'block';
-  
-  // Phase 1 : Slide in de l'album art depuis la gauche
+
+  // Phase 1 : Slide in de l'album art
   coverArt.style.transition = `transform ${albumArtInDuration}ms ease-out, opacity ${albumArtInDuration}ms ease-out`;
   coverArt.style.transform = 'translateX(-100%)';
   coverArt.style.opacity = '0';
-  void coverArt.offsetWidth; // Forcer le reflow
+  void coverArt.offsetWidth;
   coverArt.style.transform = 'translateX(0)';
   coverArt.style.opacity = '1';
-  
-  // Phase 2 : Expansion du bgBlur et de infoBar
-  // Calcul du point d'origine basé sur le centre de l'album art (dans sa position initiale)
+
+  // Phase 2 : Expansion
   setTimeout(() => {
     const albumArtRect = coverArt.getBoundingClientRect();
-    const playerRect = player.getBoundingClientRect();
-    const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
-    const origin = `${offsetX}px center`;
-    
-    // Démarrage de l'expansion du bgBlur (sans translation)
+    const playerRect   = player.getBoundingClientRect();
+    const offsetX      = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
+    const origin       = `${offsetX}px center`;
+
+    // bgBlur
     bgBlur.style.transformOrigin = origin;
-    bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
-    bgBlur.style.transform = 'scaleX(0)';
+    bgBlur.style.transition      = `transform ${expansionDuration}ms ease-out`;
+    bgBlur.style.transform       = 'scaleX(0)';
     void bgBlur.offsetWidth;
-    bgBlur.style.transform = 'scaleX(1)';
-    
-    // Pour infoBar, calculer le décalage : par exemple, 50% de la largeur de l'album art
+    bgBlur.style.transform       = 'scaleX(1)';
+
+    // Calcul du décalage infoBar
     infoBarShift = albumArtRect.width * 0.5;
   }, albumArtInDuration);
-  
-  // Lancement de l'expansion de infoBar avec un léger délai (delayExpInfo)
+
+  // infoBar expansion (décalée)
   setTimeout(() => {
-    // Utiliser le même point d'origine calculé précédemment
     const albumArtRect = coverArt.getBoundingClientRect();
-    const playerRect = player.getBoundingClientRect();
-    const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
-    const origin = `${offsetX}px center`;
-    
+    const playerRect   = player.getBoundingClientRect();
+    const offsetX      = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
+    const origin       = `${offsetX}px center`;
+
     infoBar.style.transformOrigin = origin;
-    infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
-    // Démarrer infoBar en décalé à gauche (translateX(-infoBarShift)) et scaleX(0), puis passer à translateX(0) scaleX(1)
-    infoBar.style.transform = `translateX(-${infoBarShift}px) scaleX(0)`;
+    infoBar.style.transition      = `transform ${expansionDuration}ms ease-out`;
+    infoBar.style.transform       = `translateX(-${infoBarShift}px) scaleX(0)`;
     void infoBar.offsetWidth;
-    infoBar.style.transform = 'translateX(0) scaleX(1)';
+    infoBar.style.transform       = 'translateX(0) scaleX(1)';
   }, albumArtInDuration + delayExpInfo);
-  
-  // Phase 3 : Affichage complet pendant displayDuration
+
+  // => Une fois l'expansion terminée, on redemande un update de la barre de progression
+  //    pour s'assurer qu'elle se recalcule bien à la taille finale.
+  const expansionCompleteTime = albumArtInDuration + expansionDuration + delayExpInfo + expansionDuration;
+  setTimeout(() => {
+    updateBarAndTimer(); 
+  }, expansionCompleteTime + 50);
+
+  // Phase 3 : Affichage complet
   const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
-  
-  // Phase 4 : Rétraction : infoBar commence à se rétracter en se décalant vers la gauche
+
+  // Phase 4 : Rétraction
   setTimeout(() => {
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
-    infoBar.style.transform = `translateX(-${infoBarShift}px) scaleX(0)`;
+    infoBar.style.transform  = `translateX(-${infoBarShift}px) scaleX(0)`;
   }, collapseStartTime);
-  
-  // Puis bgBlur se rétracte, avec un léger décalage (delayCollapseBG)
+
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
-    bgBlur.style.transform = 'scaleX(0)';
+    bgBlur.style.transform  = 'scaleX(0)';
   }, collapseStartTime + delayCollapseBG);
-  
-  // Phase 5 : Slide out de l'album art vers la droite
+
+  // Phase 5 : Slide out de l'album art
   const albumArtSlideOutTime = collapseStartTime + collapseDuration;
   setTimeout(() => {
     coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
-    coverArt.style.transform = 'translateX(100%)';
-    coverArt.style.opacity = '0';
+    coverArt.style.transform  = 'translateX(100%)';
+    coverArt.style.opacity    = '0';
   }, albumArtSlideOutTime);
-  
-  // Fin de la séquence : masquer le player après la durée totale
+
+  // Fin : on remet le player en opacity 0
   setTimeout(() => {
-    player.style.display = 'none';
+    player.style.opacity = '0';
+    player.style.pointerEvents = 'none';
   }, totalDuration);
 }
