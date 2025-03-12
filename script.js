@@ -410,46 +410,47 @@ function hslToRgb(h, s, l) {
     Math.round(b * 255)
   ];
 }
-// Fonction pour gérer l'affichage temporaire avec animation
+// Fonction complète corrigée pour gérer l'affichage temporaire avec animation
 function handlePopupDisplay() {
   const popupDuration = parseInt(popupDurationParam);
-  if (!popupDurationParam || isNaN(popupDurationParam) || popupDurationParam <= 0) return;
+  if (!popupDuration || isNaN(popupDuration) || popupDuration <= 0) return;
 
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
   const playerContent = document.querySelector('.player-content');
 
-  // Réinitialisation des styles initiaux
+  // Initialisation styles
   player.style.display = 'flex';
-  coverArt.style.opacity = 0;
-  playerContent.style.opacity = 0;
+  coverArt.style.opacity = '0';
+  playerContent.style.opacity = '0';
 
-  // Début animation album art (slide-in-left)
+  // Animation d'entrée Album Art
   coverArt.classList.add('slide-in-left');
 
-  // Quand l'album art arrive, fade in du reste
+  // Apparition du contenu après l'animation du coverArt
   setTimeout(() => {
-    playerContent.style.transition = 'opacity 1s ease-in';
+    coverArt.style.opacity = '1';
+    playerContent.style.transition = 'opacity 0.5s ease-in';
     playerContent.style.opacity = '1';
-  }, 1500); // Temps correspondant à l'animation slide-in-left
+  }, 1500);
 
-  // Timer pour le maintien à l'écran puis l'animation de sortie
-  const totalDisplayDuration = popupDuration * 1000;
-  const holdDuration = totalDuration(totalAnimation = 1500 + 1000) < total ? totalDuration - 3000 : 3000;
+  // Calcul du temps d'affichage sans animations
+  const totalAnimationDuration = 3000; // 1.5s entrée + 0.5s fondu + 1s sortie
+  const displayTime = (popupDuration * 1000) - totalAnimationDuration;
 
+  // Disparition du contenu et sortie du coverArt
   setTimeout(() => {
-    // Animation sortie (inverse)
-    playerContent.style.transition = 'opacity 1s ease-out';
+    playerContent.style.transition = 'opacity 0.5s ease-out';
     playerContent.style.opacity = '0';
 
     setTimeout(() => {
       coverArt.classList.remove('slide-in-left');
       coverArt.classList.add('slide-out-left');
-      
+
       setTimeout(() => {
         player.style.display = 'none';
         coverArt.classList.remove('slide-out-left');
       }, 1500);
-    }, 1000);
-  }, (popupDurationParam * 1000) - 2500); // Fin de la durée d'affichage moins animations
+    }, 500);
+  }, 1500 + 500 + displayTime); // Délai pour affichage + animations
 }
