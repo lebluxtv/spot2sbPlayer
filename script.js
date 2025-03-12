@@ -412,7 +412,8 @@ function handlePopupDisplay() {
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
   const bgBlur = document.getElementById('bg-blur');
-  const playerContent = document.querySelector('.player-content');
+  // Pour éviter que l'album art ne soit affecté par le scale, nous ciblons uniquement l'info-bar.
+  const infoBar = document.querySelector('.info-bar');
 
   // Afficher le player
   player.style.display = 'flex';
@@ -425,32 +426,30 @@ function handlePopupDisplay() {
   coverArt.style.transform = 'translateX(0)';
   coverArt.style.opacity = '1';
 
-  // Phase 2 : Expansion des éléments (bgBlur et playerContent)
+  // Phase 2 : Expansion des éléments (bgBlur et infoBar)
   setTimeout(() => {
-    // Définir l'origine de la transformation au centre
     bgBlur.style.transformOrigin = 'center';
-    playerContent.style.transformOrigin = 'center';
-    // Démarrer en scaleX(0) puis animer vers scaleX(1)
+    infoBar.style.transformOrigin = 'center';
+    // Démarrage en scaleX(0) puis animation vers scaleX(1)
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
-    playerContent.style.transition = `transform ${expansionDuration}ms ease-out`;
+    infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform = 'scaleX(0)';
-    playerContent.style.transform = 'scaleX(0)';
+    infoBar.style.transform = 'scaleX(0)';
     void bgBlur.offsetWidth;
-    void playerContent.offsetWidth;
+    void infoBar.offsetWidth;
     bgBlur.style.transform = 'scaleX(1)';
-    playerContent.style.transform = 'scaleX(1)';
+    infoBar.style.transform = 'scaleX(1)';
   }, albumArtInDuration);
 
-  // Calcul des temps pour la suite
   const expansionCompleteTime = albumArtInDuration + expansionDuration;
   const collapseStartTime = expansionCompleteTime + displayDuration;
   
-  // Phase 4 : Rétraction des éléments (uniquement bgBlur et playerContent)
+  // Phase 4 : Rétraction des éléments (bgBlur et infoBar uniquement)
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
-    playerContent.style.transition = `transform ${collapseDuration}ms ease-in`;
+    infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
     bgBlur.style.transform = 'scaleX(0)';
-    playerContent.style.transform = 'scaleX(0)';
+    infoBar.style.transform = 'scaleX(0)';
   }, collapseStartTime);
 
   // Phase 5 : Album art slide out vers la droite
@@ -461,11 +460,10 @@ function handlePopupDisplay() {
     coverArt.style.opacity = '0';
   }, albumArtSlideOutTime);
 
-  // Fin de la séquence : masquer le player sans réinitialiser bgBlur et playerContent (ils restent cachés)
+  // Fin de la séquence : masquer le player et réinitialiser les styles de l'album art
   const totalSequenceTime = albumArtInDuration + expansionDuration + displayDuration + collapseDuration + albumArtOutDuration;
   setTimeout(() => {
     player.style.display = 'none';
-    // Réinitialiser uniquement coverArt pour la prochaine animation
     coverArt.style.transform = '';
     coverArt.style.opacity = '';
   }, totalSequenceTime);
