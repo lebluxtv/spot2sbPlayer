@@ -375,89 +375,13 @@ function hslToRgb(h, s, l) {
 /************************************************************
  * handlePopupDisplay
  * Séquence d'animation pour une nouvelle musique (popupDuration en secondes) :
- * 1. Album art slide in depuis la gauche.
- * 2. Une fois l'album art en place, le fond (.bg-blur) et la zone d'info (info-bar)
- *    sont rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
- * 3. Après une période d'affichage, ces éléments se rétractent (scaleX(0)) sans affecter l'album art.
+ * 1. L'album art slide in depuis la gauche (restant à sa position initiale, côté gauche).
+ * 2. Le fond (.bg-blur) et la zone d'info (infoBar) s'étirent (stretch) depuis un point d'origine
+ *    calculé à partir du centre de l'album art (dans sa position initiale).
+ *    Pour l'expansion, le stretch de infoBar démarre avec un léger délai après bg-blur.
+ * 3. Après une période d'affichage, infoBar commence à se rétracter légèrement avant bg-blur.
  * 4. Enfin, l'album art slide out vers la droite.
- * L'album art reste masqué après l'animation et ne réapparaît qu'à la réception d'une nouvelle musique.
  ************************************************************/
-/*
-function handlePopupDisplay() {
-  const popupDurationSec = parseFloat(popupDurationParam);
-  if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
-  
-  const totalDuration = popupDurationSec * 1000;
-  
-  // Répartir la durée totale en 5 phases :
-  // Phase 1 : Album art slide in depuis la gauche : 20%
-  // Phase 2 : Expansion (stretch in) du fond et de la zone d'info : 15%
-  // Phase 3 : Affichage complet : 30%
-  // Phase 4 : Rétraction (stretch out) du fond et de la zone d'info : 15%
-  // Phase 5 : Album art slide out vers la droite : 20%
-  const albumArtInDuration = totalDuration * 0.20;
-  const expansionDuration = totalDuration * 0.15;
-  const displayDuration   = totalDuration * 0.30;
-  const collapseDuration  = totalDuration * 0.15;
-  const albumArtOutDuration = totalDuration * 0.20;
-  
-  const player = document.getElementById('player');
-  const coverArt = document.getElementById('cover-art');
-  const bgBlur = document.getElementById('bg-blur');
-  const infoBar = document.querySelector('.info-bar');
-  
-  // Afficher le player et s'assurer que l'album art est visible
-  player.style.display = 'flex';
-  coverArt.style.display = 'block';
-  
-  // Phase 1 : Album art slide in depuis la gauche
-  coverArt.style.transition = `transform ${albumArtInDuration}ms ease-out, opacity ${albumArtInDuration}ms ease-out`;
-  coverArt.style.transform = 'translateX(-100%)';
-  coverArt.style.opacity = '0';
-  void coverArt.offsetWidth; // Forcer le reflow
-  coverArt.style.transform = 'translateX(0)';
-  coverArt.style.opacity = '1';
-  
-  // Phase 2 : Expansion des éléments (bgBlur et infoBar) avec transformOrigin défini à 'left center'
-  setTimeout(() => {
-    bgBlur.style.transformOrigin = 'left center';
-    infoBar.style.transformOrigin = 'left center';
-    bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
-    infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
-    // Commencer en scaleX(0) puis passer à scaleX(1)
-    bgBlur.style.transform = 'scaleX(0)';
-    infoBar.style.transform = 'scaleX(0)';
-    void bgBlur.offsetWidth;
-    void infoBar.offsetWidth;
-    bgBlur.style.transform = 'scaleX(1)';
-    infoBar.style.transform = 'scaleX(1)';
-  }, albumArtInDuration);
-  
-  // Phase 3 : Affichage complet pendant displayDuration (aucune action, simplement attendre)
-  const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
-  
-  // Phase 4 : Rétraction des éléments (bgBlur et infoBar) vers 0 en scaleX
-  setTimeout(() => {
-    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
-    infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
-    bgBlur.style.transform = 'scaleX(0)';
-    infoBar.style.transform = 'scaleX(0)';
-  }, collapseStartTime);
-  
-  // Phase 5 : Album art slide out vers la droite
-  const albumArtSlideOutTime = collapseStartTime + collapseDuration;
-  setTimeout(() => {
-    coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
-    coverArt.style.transform = 'translateX(100%)';
-    coverArt.style.opacity = '0';
-  }, albumArtSlideOutTime);
-  
-  // Fin de la séquence : masquer le player à la fin
-  setTimeout(() => {
-    player.style.display = 'none';
-  }, totalDuration);
-}
-*/
 function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
@@ -468,6 +392,10 @@ function handlePopupDisplay() {
   const displayDuration = totalDuration * 0.3;
   const collapseDuration = totalDuration * 0.15;
   const albumArtOutDuration = totalDuration * 0.2;
+  
+  // Délais pour décaler l'animation de l'infoBar par rapport à bgBlur (en ms)
+  const delayExpInfo = 100;      // infoBar commence 100ms plus tard lors de l'expansion
+  const delayCollapseBG = 100;   // bgBlur commence 100ms plus tard lors de la contraction (infoBar se rétracte d'abord)
   
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
@@ -487,36 +415,48 @@ function handlePopupDisplay() {
   coverArt.style.opacity = '1';
   
   // Phase 2 : Expansion du fond et de la zone d'info.
-  // Le point d'origine de la transformation est calculé à partir du centre de l'album art (dans sa position initiale).
+  // Calcul du point d'origine basé sur le centre de l'album art (dans sa position initiale)
   setTimeout(() => {
     const albumArtRect = coverArt.getBoundingClientRect();
     const playerRect = player.getBoundingClientRect();
     const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
     const origin = `${offsetX}px center`;
-    bgBlur.style.transformOrigin = origin;
-    infoBar.style.transformOrigin = origin+150;
     
+    // Démarrer l'expansion du bgBlur
+    bgBlur.style.transformOrigin = origin;
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
-    infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
-    // Départ en scaleX(0) puis passage à scaleX(1)
     bgBlur.style.transform = 'scaleX(0)';
-    infoBar.style.transform = 'scaleX(0)';
     void bgBlur.offsetWidth;
-    void infoBar.offsetWidth;
     bgBlur.style.transform = 'scaleX(1)';
-    infoBar.style.transform = 'scaleX(1)';
   }, albumArtInDuration);
+  
+  // Lancement de l'expansion de infoBar avec un léger délai (delayExpInfo)
+  setTimeout(() => {
+    const albumArtRect = coverArt.getBoundingClientRect();
+    const playerRect = player.getBoundingClientRect();
+    const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
+    const origin = `${offsetX}px center`;
+    
+    infoBar.style.transformOrigin = origin;
+    infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
+    infoBar.style.transform = 'scaleX(0)';
+    void infoBar.offsetWidth;
+    infoBar.style.transform = 'scaleX(1)';
+  }, albumArtInDuration + delayExpInfo);
   
   // Phase 3 : Affichage complet pendant displayDuration
   const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
   
-  // Phase 4 : Collapse du fond et de la zone d'info (scaleX de 1 à 0)
+  // Phase 4 : Rétraction (collapse) : infoBar commence à se rétracter avant bgBlur
   setTimeout(() => {
-    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
-    bgBlur.style.transform = 'scaleX(0)';
     infoBar.style.transform = 'scaleX(0)';
   }, collapseStartTime);
+  
+  setTimeout(() => {
+    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
+    bgBlur.style.transform = 'scaleX(0)';
+  }, collapseStartTime + delayCollapseBG);
   
   // Phase 5 : Slide out de l'album art vers la droite
   const albumArtSlideOutTime = collapseStartTime + collapseDuration;
