@@ -11,13 +11,15 @@
  *  - Paramètre ?hostApp=wpf => affiche un message dans infoDiv
  *    tant qu'aucun payload n'est reçu. Dès qu'un payload valide est
  *    reçu, le message est effacé et un flag est enregistré dans le sessionStorage.
- *  - Paramètre ?popupDuration=XX => lance une animation popup temporaire :
- *      1. L'album art arrive en slide in depuis la gauche.
- *      2. Le background (.bg-blur) et le contenu (titre, artiste, barre, timer)
+ *  - Paramètre ?popupDuration=XX => si une nouvelle musique est détectée,
+ *    lance une séquence d'animation :
+ *      1. L'album art slide in depuis la gauche.
+ *      2. Dès son arrivée, le fond (.bg-blur) et le contenu (player-content)
  *         sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
- *      3. Après un délai d'affichage, les éléments se rétractent (scaleX(0)),
- *         laissant l'album art seul, qui se retire ensuite en slide out vers la droite.
- *      La durée totale de la séquence est définie par popupDuration (en secondes).
+ *      3. Après une durée d'affichage, ces éléments se rétractent (scaleX(0)),
+ *         tandis que la pochette reste centrée.
+ *      4. Enfin, l'album art slide out vers la droite.
+ *      La séquence ne se déclenche que si le payload indique une nouvelle musique.
  ************************************************************/
 
 // Variables globales pour la progression
@@ -76,7 +78,7 @@ const client = new StreamerbotClient({
   //password: 'streamer.bot'
 });
 
-let lastSongName = "";
+let lastSongName = ""; // Sert à comparer et détecter une nouvelle musique
 
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
@@ -116,14 +118,15 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
+    // Déclencher une animation uniquement en cas de nouvelle musique
     if (songName !== lastSongName) {
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
-      // Lancer l'animation popup si le paramètre popupDuration est présent
       if (popupDurationParam) {
          handlePopupDisplay();
       }
     } else {
+      // Pour la même musique, on se contente de synchroniser la progression
       syncProgress(progressSec);
     }
   }
@@ -205,9 +208,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     setupScrollingTitle();
   });
 
-  // L'album art effectue son slide in depuis la gauche
+  // L'album art arrive avec un slide in depuis la gauche
   animateElement(coverArt, 'slide-in-left');
-  // Les autres éléments sont animés via handlePopupDisplay
+  // Les autres éléments sont mis à jour normalement
   animateElement(timeBarBg, 'slide-in-right');
   animateElement(timeBarFill, 'slide-in-right');
   animateElement(timeRemaining, 'slide-in-right');
@@ -388,13 +391,12 @@ function hslToRgb(h, s, l) {
 
 /************************************************************
  * handlePopupDisplay
- * Animation du popup selon popupDuration :
- * 1. Album art slide in depuis la gauche (durée: 20% du total).
- * 2. Dès son arrivée, le background (.bg-blur) et le contenu (player-content)
- *    sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)) sur 15%.
- * 3. Affichage complet pendant 30% du temps.
- * 4. Rétraction des éléments vers le centre sur 15%.
- * 5. Album art slide out vers la droite sur 20%.
+ * Séquence d'animation pour une nouvelle musique (popupDuration en secondes) :
+ * 1. Album art slide in depuis la gauche.
+ * 2. Une fois l'album art en place, le fond (.bg-blur) et le contenu (player-content)
+ *    sont initialement rétractés (scaleX(0) centré) puis s'étendent (scaleX(1)).
+ * 3. Après une période d'affichage, ces éléments se rétractent (scaleX(0)) sans affecter la pochette.
+ * 4. Enfin, l'album art slide out vers la droite.
  ************************************************************/
 function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
@@ -418,33 +420,32 @@ function handlePopupDisplay() {
   // Phase 1 : Album art slide in depuis la gauche
   coverArt.style.transition = `transform ${albumArtInDuration}ms ease-out, opacity ${albumArtInDuration}ms ease-out`;
   coverArt.style.transform = 'translateX(-100%)';
-  coverArt.style.opacity = '1';
-  void coverArt.offsetWidth;
+  coverArt.style.opacity = '0';
+  void coverArt.offsetWidth; // Forcer le reflow
   coverArt.style.transform = 'translateX(0)';
+  coverArt.style.opacity = '1';
 
-  // Phase 2 : Après album art in, expansion des éléments
+  // Phase 2 : Expansion des éléments (bgBlur et playerContent)
   setTimeout(() => {
-    // Initialiser bgBlur et playerContent en état rétracté
+    // Définir l'origine de la transformation au centre
     bgBlur.style.transformOrigin = 'center';
     playerContent.style.transformOrigin = 'center';
-    // Appliquer un scaleX(0)
-    bgBlur.style.transform = 'scaleX(0)';
-    playerContent.style.transform = 'scaleX(0)';
-    // Forcer le reflow
-    void bgBlur.offsetWidth;
-    void playerContent.offsetWidth;
-    // Transition d'expansion sur expansionDuration
+    // Démarrer en scaleX(0) puis animer vers scaleX(1)
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
     playerContent.style.transition = `transform ${expansionDuration}ms ease-out`;
+    bgBlur.style.transform = 'scaleX(0)';
+    playerContent.style.transform = 'scaleX(0)';
+    void bgBlur.offsetWidth;
+    void playerContent.offsetWidth;
     bgBlur.style.transform = 'scaleX(1)';
     playerContent.style.transform = 'scaleX(1)';
   }, albumArtInDuration);
 
-  // Phase 3 : Affichage complet pendant displayDuration
+  // Calcul des temps pour la suite
   const expansionCompleteTime = albumArtInDuration + expansionDuration;
   const collapseStartTime = expansionCompleteTime + displayDuration;
   
-  // Phase 4 : Rétraction des éléments vers le centre
+  // Phase 4 : Rétraction des éléments (uniquement bgBlur et playerContent)
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     playerContent.style.transition = `transform ${collapseDuration}ms ease-in`;
@@ -460,13 +461,12 @@ function handlePopupDisplay() {
     coverArt.style.opacity = '0';
   }, albumArtSlideOutTime);
 
-  // Masquer le player à la fin de la séquence
+  // Fin de la séquence : masquer le player sans réinitialiser bgBlur et playerContent (ils restent cachés)
   const totalSequenceTime = albumArtInDuration + expansionDuration + displayDuration + collapseDuration + albumArtOutDuration;
   setTimeout(() => {
     player.style.display = 'none';
-    // Réinitialiser les transformations pour un futur appel
+    // Réinitialiser uniquement coverArt pour la prochaine animation
     coverArt.style.transform = '';
-    bgBlur.style.transform = '';
-    playerContent.style.transform = '';
+    coverArt.style.opacity = '';
   }, totalSequenceTime);
 }
