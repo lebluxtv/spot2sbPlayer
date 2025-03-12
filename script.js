@@ -378,8 +378,10 @@ function hslToRgb(h, s, l) {
  * 1. L'album art slide in depuis la gauche (restant à sa position initiale, côté gauche).
  * 2. Le fond (.bg-blur) et la zone d'info (infoBar) s'étirent (stretch) depuis un point d'origine
  *    calculé à partir du centre de l'album art (dans sa position initiale).
- *    Pour l'expansion, le stretch de infoBar démarre avec un léger délai après bg-blur.
- * 3. Après une période d'affichage, infoBar commence à se rétracter légèrement avant bg-blur.
+ *    Pour infoBar, l'animation d'expansion commence avec un léger décalage :
+ *    elle démarre en translateX(-[infoBarShift]) scaleX(0) puis passe à translateX(0) scaleX(1).
+ * 3. Après une période d'affichage, infoBar se rétracte en se décalant vers la gauche (translateX(-[infoBarShift]) scaleX(0))
+ *    tandis que bgBlur se rétracte ensuite.
  * 4. Enfin, l'album art slide out vers la droite.
  ************************************************************/
 function handlePopupDisplay() {
@@ -393,9 +395,12 @@ function handlePopupDisplay() {
   const collapseDuration = totalDuration * 0.15;
   const albumArtOutDuration = totalDuration * 0.2;
   
-  // Délais pour décaler l'animation de l'infoBar par rapport à bgBlur (en ms)
-  const delayExpInfo = 100;      // infoBar commence 100ms plus tard lors de l'expansion
-  const delayCollapseBG = 100;   // bgBlur commence 100ms plus tard lors de la contraction (infoBar se rétracte d'abord)
+  // Délais pour infoBar :
+  const delayExpInfo = 100;      // infoBar commence 100ms après bgBlur lors de l'expansion
+  const delayCollapseBG = 100;   // bgBlur commence 100ms après infoBar lors de la contraction
+  
+  // Facteur de décalage pour infoBar (en pixels) : ici, on décale de 50% de la largeur de l'album art
+  let infoBarShift = 0;
   
   const player = document.getElementById('player');
   const coverArt = document.getElementById('cover-art');
@@ -414,7 +419,7 @@ function handlePopupDisplay() {
   coverArt.style.transform = 'translateX(0)';
   coverArt.style.opacity = '1';
   
-  // Phase 2 : Expansion du fond et de la zone d'info.
+  // Phase 2 : Expansion du bgBlur et de infoBar
   // Calcul du point d'origine basé sur le centre de l'album art (dans sa position initiale)
   setTimeout(() => {
     const albumArtRect = coverArt.getBoundingClientRect();
@@ -422,16 +427,20 @@ function handlePopupDisplay() {
     const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
     const origin = `${offsetX}px center`;
     
-    // Démarrer l'expansion du bgBlur
+    // Démarrage de l'expansion du bgBlur (sans translation)
     bgBlur.style.transformOrigin = origin;
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform = 'scaleX(0)';
     void bgBlur.offsetWidth;
     bgBlur.style.transform = 'scaleX(1)';
+    
+    // Pour infoBar, calculer le décalage : par exemple, 50% de la largeur de l'album art
+    infoBarShift = albumArtRect.width * 0.5;
   }, albumArtInDuration);
   
   // Lancement de l'expansion de infoBar avec un léger délai (delayExpInfo)
   setTimeout(() => {
+    // Utiliser le même point d'origine calculé précédemment
     const albumArtRect = coverArt.getBoundingClientRect();
     const playerRect = player.getBoundingClientRect();
     const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
@@ -439,20 +448,22 @@ function handlePopupDisplay() {
     
     infoBar.style.transformOrigin = origin;
     infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
-    infoBar.style.transform = 'scaleX(0)';
+    // Démarrer infoBar en décalé à gauche (translateX(-infoBarShift)) et scaleX(0), puis passer à translateX(0) scaleX(1)
+    infoBar.style.transform = `translateX(-${infoBarShift}px) scaleX(0)`;
     void infoBar.offsetWidth;
-    infoBar.style.transform = 'scaleX(1)';
+    infoBar.style.transform = 'translateX(0) scaleX(1)';
   }, albumArtInDuration + delayExpInfo);
   
   // Phase 3 : Affichage complet pendant displayDuration
   const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
   
-  // Phase 4 : Rétraction (collapse) : infoBar commence à se rétracter avant bgBlur
+  // Phase 4 : Rétraction : infoBar commence à se rétracter en se décalant vers la gauche
   setTimeout(() => {
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
-    infoBar.style.transform = 'scaleX(0)';
+    infoBar.style.transform = `translateX(-${infoBarShift}px) scaleX(0)`;
   }, collapseStartTime);
   
+  // Puis bgBlur se rétracte, avec un léger décalage (delayCollapseBG)
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     bgBlur.style.transform = 'scaleX(0)';
