@@ -132,7 +132,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeBarBg     = document.getElementById("time-bar-bg");
   const timeRemaining = document.getElementById("time-remaining");
-
+ if (bgBlur) {
+    bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
+  }
   // Pochette
   if (coverArt) {
     coverArt.style.display = 'block';
