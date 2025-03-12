@@ -39,7 +39,9 @@ if (isWpfMode) {
 
 // Préparation de l'UI
 if (playerDiv) {
-  playerDiv.style.display = 'none'; // masqué au départ
+  // On conserve le player dans le layout en utilisant opacity (invisible quand pas utilisé)
+  playerDiv.style.display = 'flex';
+  playerDiv.style.opacity = '0';
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
   }
@@ -69,10 +71,11 @@ client.on('General.Custom', ({ event, data }) => {
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // Si noSong est true, masquer le player
+  // Si noSong est true, masquer le player (on masque en opacity pour éviter reflow)
   if (data.noSong === true) {
     if (playerDiv) {
-      playerDiv.style.display = 'none';
+      playerDiv.style.opacity = '0';
+      playerDiv.style.pointerEvents = 'none';
     }
     return;
   }
@@ -83,7 +86,8 @@ client.on('General.Custom', ({ event, data }) => {
     sessionStorage.setItem("spotifyConnected", "true");
   }
   if (playerDiv) {
-    playerDiv.style.display = 'block';
+    playerDiv.style.opacity = '1';
+    playerDiv.style.pointerEvents = 'auto';
   }
 
   // Gérer lecture/pause
@@ -145,11 +149,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   trackDuration = durationSec;
   timeSpent = Math.min(progressSec, durationSec);
 
-  // Correction : désactiver la transition du timeBarFill lors du chargement initial
+  // Pour éviter un recalcul visible, on désactive temporairement la transition du timeBarFill
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
   updateBarAndTimer();
+  // Réactiver la transition après un délai (ce délai peut être ajusté)
   setTimeout(() => {
     if (timeBarFill) {
       timeBarFill.style.transition = 'width 0.5s linear';
@@ -203,7 +208,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
   // L'album art arrive avec un slide in depuis la gauche
   animateElement(coverArt, 'slide-in-left');
-  // Les autres éléments sont mis à jour normalement
+  // Les autres éléments se mettent à jour normalement
   animateElement(timeBarBg, 'slide-in-right');
   animateElement(timeBarFill, 'slide-in-right');
   animateElement(timeRemaining, 'slide-in-right');
@@ -393,6 +398,9 @@ function hslToRgb(h, s, l) {
  * 3. Après une période d'affichage, infoBar se rétracte en se décalant vers la gauche (translateX(-[infoBarShift]) scaleX(0))
  *    tandis que bgBlur se rétracte ensuite.
  * 4. Enfin, l'album art slide out vers la droite.
+ *
+ * Pour éviter des reflows gênants sur la barre de progression, on ne masque plus le player via display:none,
+ * mais on change son opacité à la fin de la séquence.
  ************************************************************/
 function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
@@ -417,8 +425,9 @@ function handlePopupDisplay() {
   const bgBlur = document.getElementById('bg-blur');
   const infoBar = document.querySelector('.info-bar');
   
-  // Afficher le player et l'album art (positionné sur le côté gauche)
-  player.style.display = 'flex';
+  // Assurer que le player est visible sans reflow (on travaille avec opacity)
+  player.style.opacity = '1';
+  player.style.pointerEvents = 'auto';
   coverArt.style.display = 'block';
   
   // Phase 1 : Slide in de l'album art depuis la gauche
@@ -430,27 +439,25 @@ function handlePopupDisplay() {
   coverArt.style.opacity = '1';
   
   // Phase 2 : Expansion du bgBlur et de infoBar
-  // Calcul du point d'origine basé sur le centre de l'album art (dans sa position initiale)
   setTimeout(() => {
     const albumArtRect = coverArt.getBoundingClientRect();
     const playerRect = player.getBoundingClientRect();
     const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
     const origin = `${offsetX}px center`;
     
-    // Démarrage de l'expansion du bgBlur (sans translation)
+    // Expansion de bgBlur
     bgBlur.style.transformOrigin = origin;
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform = 'scaleX(0)';
     void bgBlur.offsetWidth;
     bgBlur.style.transform = 'scaleX(1)';
     
-    // Pour infoBar, calculer le décalage : par exemple, 50% de la largeur de l'album art
+    // Calcul du décalage pour infoBar (50% de la largeur de l'album art)
     infoBarShift = albumArtRect.width * 0.5;
   }, albumArtInDuration);
   
-  // Lancement de l'expansion de infoBar avec un léger délai (delayExpInfo)
+  // Lancement de l'expansion de infoBar avec un délai (delayExpInfo)
   setTimeout(() => {
-    // Utiliser le même point d'origine calculé précédemment
     const albumArtRect = coverArt.getBoundingClientRect();
     const playerRect = player.getBoundingClientRect();
     const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
@@ -458,7 +465,7 @@ function handlePopupDisplay() {
     
     infoBar.style.transformOrigin = origin;
     infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
-    // Démarrer infoBar en décalé à gauche (translateX(-infoBarShift)) et scaleX(0), puis passer à translateX(0) scaleX(1)
+    // Démarrer infoBar en décalé à gauche et scaleX(0), puis revenir à sa position normale avec scaleX(1)
     infoBar.style.transform = `translateX(-${infoBarShift}px) scaleX(0)`;
     void infoBar.offsetWidth;
     infoBar.style.transform = 'translateX(0) scaleX(1)';
@@ -467,13 +474,13 @@ function handlePopupDisplay() {
   // Phase 3 : Affichage complet pendant displayDuration
   const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
   
-  // Phase 4 : Rétraction : infoBar commence à se rétracter en se décalant vers la gauche
+  // Phase 4 : Rétraction : infoBar se rétracte en se décalant vers la gauche
   setTimeout(() => {
     infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
     infoBar.style.transform = `translateX(-${infoBarShift}px) scaleX(0)`;
   }, collapseStartTime);
   
-  // Puis bgBlur se rétracte, avec un léger décalage (delayCollapseBG)
+  // Puis bgBlur se rétracte avec un délai (delayCollapseBG)
   setTimeout(() => {
     bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
     bgBlur.style.transform = 'scaleX(0)';
@@ -487,8 +494,9 @@ function handlePopupDisplay() {
     coverArt.style.opacity = '0';
   }, albumArtSlideOutTime);
   
-  // Fin de la séquence : masquer le player après la durée totale
+  // Fin de la séquence : masquer le player en le laissant dans le layout (opacity à 0)
   setTimeout(() => {
-    player.style.display = 'none';
+    player.style.opacity = '0';
+    player.style.pointerEvents = 'none';
   }, totalDuration);
 }
