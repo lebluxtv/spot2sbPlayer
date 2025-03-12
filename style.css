@@ -6,7 +6,7 @@
 }
 
 body {
-  background: #252525; /* ou la couleur que vous voulez */
+  background: #252525;
   font-family: sans-serif;
   color: #fff;
   display: flex;
@@ -20,8 +20,10 @@ body {
   position: relative;
   width: 600px;
   height: 100px;
-  overflow: hidden; /* ensures the background blur is also clipped */
-  border-radius: 10px; /* coins arrondis */
+  overflow: hidden;
+  border-radius: 10px;
+  /* Ajout d'une transition sur l'opacité pour un fade en douceur */
+  transition: opacity 0.5s;
 }
 
 /* Arrière-plan flou / étiré */
@@ -35,11 +37,10 @@ body {
   background-position: center;
   filter: blur(8px);
   transform: scale(1.2);
-  opacity: 0.6; /* Valeur par défaut (modifiable via JS si ?opacity=xx) */
+  opacity: 0.6;
   z-index: 1;
 }
 
-/* Voile sombre pour améliorer la lisibilité du texte */
 .bg-blur::after {
   content: "";
   position: absolute;
@@ -61,17 +62,17 @@ body {
   padding: 0 10px;
 }
 
-/* Pochette album (carrée par défaut) */
+/* Pochette album */
 .cover-art {
   aspect-ratio: 1 / 1;
   background-size: cover;
   background-position: center;
   margin-right: 10px;
   min-width: 80px;
-  flex: 0 0 auto; /* pochette fixe */
+  flex: 0 0 auto;
 }
 
-/* Mode "disque" (arrondi + rotation) */
+/* Mode "disque" */
 .disc-mode {
   border-radius: 50%;
   animation: disc-spin 6s linear infinite;
@@ -91,7 +92,7 @@ body {
   min-width: 0;
 }
 
-/* Titre: on le fait défiler si trop long */
+/* Titre */
 .track-name {
   position: relative;
   overflow: hidden;
@@ -101,7 +102,6 @@ body {
   margin-bottom: 4px;
 }
 
-/* On retire l'animation par défaut, on l'activera en JS si besoin */
 .track-name span {
   display: inline-block;
   animation: none;
@@ -123,7 +123,7 @@ body {
 /* Barre de progression + timer */
 .time-row {
   position: relative;
-  height: 24px; /* ensures space for the timer */
+  height: 24px;
   margin-top: 6px;
 }
 
@@ -143,12 +143,12 @@ body {
   left: 0;
   top: 0;
   height: 100%;
-  width: 100%; /* départ: 100% -> 0% */
-  background: #0f0; /* modifié si ?color=xx est précisé */
+  width: 100%;
+  background: #0f0;
   transition: width 0.5s linear;
 }
 
-/* Timer en haut à droite */
+/* Timer */
 .time-remaining {
   position: absolute;
   right: 8px;
@@ -163,34 +163,16 @@ body {
  * Animations "slide in" (arrivée)
  **************************************************************/
 @keyframes slideInLeft {
-  from {
-    transform: translateX(-150%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(-150%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 @keyframes slideInRight {
-  from {
-    transform: translateX(150%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(150%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 @keyframes slideInTop {
-  from {
-    transform: translateY(-50%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(-50%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .slide-in-left {
@@ -202,9 +184,10 @@ body {
 .slide-in-top {
   animation: slideInTop 1.5s forwards;
 }
+
 @keyframes slideOutLeft {
   from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-150%); opacity: 0; }
+  to { transform: translateX(-150%); opacity: 0; }
 }
 
 .slide-out-left {
