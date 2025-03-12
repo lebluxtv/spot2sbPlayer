@@ -196,3 +196,11 @@ body {
 .slide-in-top {
   animation: slideInTop 1.5s forwards;
 }
+@keyframes slideOutLeft {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-150%); opacity: 0; }
+}
+
+.slide-out-left {
+  animation: slideOutLeft 1.5s forwards;
+}
