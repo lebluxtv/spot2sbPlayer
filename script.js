@@ -494,7 +494,7 @@ function handlePopupDisplay() {
     const offsetX = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
     const origin = `${offsetX}px center`;
     bgBlur.style.transformOrigin = origin;
-    infoBar.style.transformOrigin = origin;
+    infoBar.style.transformOrigin = origin-50;
     
     bgBlur.style.transition = `transform ${expansionDuration}ms ease-out`;
     infoBar.style.transition = `transform ${expansionDuration}ms ease-out`;
