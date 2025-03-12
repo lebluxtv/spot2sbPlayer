@@ -154,7 +154,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     if (timeBarFill) {
       timeBarFill.style.transition = 'width 0.5s linear';
     }
-  }, 150);
+  }, 100);
 
   if (currentInterval) {
     clearInterval(currentInterval);
