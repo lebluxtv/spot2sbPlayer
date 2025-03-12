@@ -396,8 +396,8 @@ function handlePopupDisplay() {
   const albumArtOutDuration = totalDuration * 0.2;
   
   // Délais pour infoBar :
-  const delayExpInfo = 100;      // infoBar commence 100ms après bgBlur lors de l'expansion
-  const delayCollapseBG = 100;   // bgBlur commence 100ms après infoBar lors de la contraction
+  const delayExpInfo = 500;      // infoBar commence 100ms après bgBlur lors de l'expansion
+  const delayCollapseBG = 500;   // bgBlur commence 100ms après infoBar lors de la contraction
   
   // Facteur de décalage pour infoBar (en pixels) : ici, on décale de 50% de la largeur de l'album art
   let infoBarShift = 0;
