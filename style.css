@@ -46,6 +46,7 @@ max-width: 600px;  /* taille maxi */
 
 /* Contenu (pochette, infos, timer) */
 .player-content {
+  justify-content: center; 
   position: relative;
   z-index: 2;
   display: flex;
