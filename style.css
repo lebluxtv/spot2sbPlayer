@@ -17,7 +17,8 @@ body {
 
 .player {
   position: relative;
-  width: 600px;
+max-width: 600px;  /* taille maxi */
+  width: 100%;       /* prend la largeur disponible */
   height: 100px;
   overflow: hidden;
   border-radius: 10px;
