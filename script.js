@@ -97,7 +97,8 @@ client.on('General.Custom', ({ event, data }) => {
   } else {
     resumeProgressBar();
   }
-
+  // **Récupération du nom du requester**
+  const requesterName = data.requesterName || ""; // si absent => chaîne vide
   // Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
@@ -106,10 +107,10 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
-    // Nouvelle musique ?
+    // On appelle loadNewTrack en lui passant la nouvelle info
     if (songName !== lastSongName) {
       lastSongName = songName;
-      loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec);
+      loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName);
       // Lancer l'animation popup si popupDuration est défini
       if (popupDurationParam) {
         handlePopupDisplay();
@@ -124,7 +125,7 @@ client.on('General.Custom', ({ event, data }) => {
 /************************************************************
  * loadNewTrack
  ************************************************************/
-function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec) {
+function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName) {
   const bgBlur        = document.getElementById("bg-blur");
   const coverArt      = document.getElementById("cover-art");
   const trackNameSpan = document.getElementById("track-name");
@@ -228,7 +229,16 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
 }
-
+// On gère l'affichage du requester
+  if (requesterNameEl) {
+    if (requesterName) {
+      requesterNameEl.textContent = "Requested by " + requesterName;
+      requesterNameEl.style.display = "block";
+    } else {
+      requesterNameEl.textContent = "";
+      requesterNameEl.style.display = "none";
+    }
+  }
 /************************************************************
  * syncProgress
  ************************************************************/
