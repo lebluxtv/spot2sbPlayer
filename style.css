@@ -23,6 +23,12 @@ max-width: 600px;  /* taille maxi */
   overflow: hidden;
   border-radius: 10px;
 }
+.requester-name {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 6px; /* pour séparer un peu du timer */
+  display: none;      /* masqué par défaut */
+}
 
 /* Arrière-plan flou */
 .bg-blur {
