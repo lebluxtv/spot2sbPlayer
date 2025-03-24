@@ -11,13 +11,13 @@ let trackDuration = 180;
 let isPaused = false;
 
 /** Récupération des paramètres d'URL **/
-const urlParams    = new URLSearchParams(window.location.search);
-const customWidth  = urlParams.get('width');
-const customColor  = urlParams.get('color');
-const albumParam   = urlParams.get('album');
-const opacityParam = urlParams.get('opacity');
-const hostApp      = urlParams.get('hostApp');
-const popupDurationParam = urlParams.get('popupDuration');
+const urlParams           = new URLSearchParams(window.location.search);
+const customWidth         = urlParams.get('width');
+const customColor         = urlParams.get('color');
+const albumParam          = urlParams.get('album');
+const opacityParam        = urlParams.get('opacity');
+const hostApp             = urlParams.get('hostApp');
+const popupDurationParam  = urlParams.get('popupDuration');
 
 /** Sélection d’éléments DOM **/
 const infoDiv   = document.getElementById('infoDiv');
@@ -37,7 +37,7 @@ if (isWpfMode) {
 
 // Préparation UI
 if (playerDiv) {
-  // Au départ, on le cache avec display: none
+  // Au départ, on le cache
   playerDiv.style.display = 'none';
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
@@ -97,8 +97,10 @@ client.on('General.Custom', ({ event, data }) => {
   } else {
     resumeProgressBar();
   }
-  // **Récupération du nom du requester**
-  const requesterName = data.requesterName || ""; // si absent => chaîne vide
+
+  // Récupération du nom du requester (s'il existe)
+  const requesterName = data.requesterName || "";
+
   // Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
@@ -107,10 +109,11 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
-    // On appelle loadNewTrack en lui passant la nouvelle info
+    // On appelle loadNewTrack en lui passant requesterName
     if (songName !== lastSongName) {
       lastSongName = songName;
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName);
+
       // Lancer l'animation popup si popupDuration est défini
       if (popupDurationParam) {
         handlePopupDisplay();
@@ -126,16 +129,21 @@ client.on('General.Custom', ({ event, data }) => {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName) {
-  const bgBlur        = document.getElementById("bg-blur");
-  const coverArt      = document.getElementById("cover-art");
-  const trackNameSpan = document.getElementById("track-name");
-  const artistNameEl  = document.getElementById("artist-name");
-  const timeBarFill   = document.getElementById("time-bar-fill");
-  const timeBarBg     = document.getElementById("time-bar-bg");
-  const timeRemaining = document.getElementById("time-remaining");
- if (bgBlur) {
+  const bgBlur          = document.getElementById("bg-blur");
+  const coverArt        = document.getElementById("cover-art");
+  const trackNameSpan   = document.getElementById("track-name");
+  const artistNameEl    = document.getElementById("artist-name");
+  const timeBarFill     = document.getElementById("time-bar-fill");
+  const timeBarBg       = document.getElementById("time-bar-bg");
+  const timeRemaining   = document.getElementById("time-remaining");
+  // Élément pour afficher le pseudo (ex: <div id="requester-name">)
+  const requesterNameEl = document.getElementById("requester-name");
+
+  // Mise à jour de l'arrière-plan flou
+  if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   }
+
   // Pochette
   if (coverArt) {
     coverArt.style.display = 'block';
@@ -146,29 +154,36 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       coverArt.classList.remove('disc-mode');
     }
   }
+
   // Titre & artiste
   if (trackNameSpan) trackNameSpan.textContent = songName;
   if (artistNameEl)  artistNameEl.textContent  = artistName;
+
+  // Affichage du requester (si non vide)
+  if (requesterNameEl) {
+    if (requesterName) {
+      requesterNameEl.textContent = "Requested by " + requesterName;
+      requesterNameEl.style.display = "block";
+    } else {
+      requesterNameEl.textContent = "";
+      requesterNameEl.style.display = "none";
+    }
+  }
 
   // Durée & progression
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
 
-  // 1) On retire temporairement la transition du timeBarFill
+  // Retrait temporaire de la transition pour ajuster la barre
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
-
-  // 2) On met à jour immédiatement la barre => bonne taille dès le début
+  // Mise à jour immédiate
   updateBarAndTimer();
-
-  // 3) On force un reflow
+  // Forcer un reflow
   if (timeBarFill) {
     void timeBarFill.offsetWidth;
-  }
-
-  // 4) On réactive la transition pour les prochaines modifications
-  if (timeBarFill) {
+    // Réactiver la transition
     timeBarFill.style.transition = 'width 0.5s linear';
   }
 
@@ -190,7 +205,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
-  // Couleur
+  // Couleur (barre + textes)
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
@@ -198,6 +213,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     if (artistNameEl)  artistNameEl.style.color          = colorHex;
     if (timeRemaining) timeRemaining.style.color          = colorHex;
   } else {
+    // Utilisation de ColorThief pour extraire une couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -229,16 +245,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
 }
-// On gère l'affichage du requester
-  if (requesterNameEl) {
-    if (requesterName) {
-      requesterNameEl.textContent = "Requested by " + requesterName;
-      requesterNameEl.style.display = "block";
-    } else {
-      requesterNameEl.textContent = "";
-      requesterNameEl.style.display = "none";
-    }
-  }
+
 /************************************************************
  * syncProgress
  ************************************************************/
@@ -294,7 +301,7 @@ function setupScrollingTitle() {
 function animateElement(element, animationClass) {
   if (!element) return;
   element.classList.remove(animationClass);
-  void element.offsetWidth;
+  void element.offsetWidth; // reflow
   element.classList.add(animationClass);
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
@@ -423,7 +430,6 @@ function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
 
-  // Votre code "stretch in/out" inchangé, par ex. :
   const totalDuration       = popupDurationSec * 1000;
   const albumArtInDuration  = totalDuration * 0.2;
   const expansionDuration   = totalDuration * 0.15;
@@ -464,50 +470,4 @@ function handlePopupDisplay() {
     bgBlur.style.transition      = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform       = 'scaleX(0)';
     void bgBlur.offsetWidth;
-    bgBlur.style.transform       = 'scaleX(1)';
-
-    // infoBarShift
-    infoBarShift = albumArtRect.width * 0.5;
-  }, albumArtInDuration);
-
-  // infoBar expansion
-  setTimeout(() => {
-    const albumArtRect = coverArt.getBoundingClientRect();
-    const playerRect   = player.getBoundingClientRect();
-    const offsetX      = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
-    const origin       = `${offsetX}px center`;
-
-    infoBar.style.transformOrigin = origin;
-    infoBar.style.transition      = `transform ${expansionDuration}ms ease-out`;
-    infoBar.style.transform       = `translateX(-${infoBarShift}px) scaleX(0)`;
-    void infoBar.offsetWidth;
-    infoBar.style.transform       = 'translateX(0) scaleX(1)';
-  }, albumArtInDuration + delayExpInfo);
-
-  // Phase 3 : Affichage
-  const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
-
-  // Phase 4 : Rétraction
-  setTimeout(() => {
-    infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
-    infoBar.style.transform  = `translateX(-${infoBarShift}px) scaleX(0)`;
-  }, collapseStartTime);
-
-  setTimeout(() => {
-    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
-    bgBlur.style.transform  = 'scaleX(0)';
-  }, collapseStartTime + delayCollapseBG);
-
-  // Phase 5 : Slide out
-  const albumArtSlideOutTime = collapseStartTime + collapseDuration;
-  setTimeout(() => {
-    coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
-    coverArt.style.transform  = 'translateX(100%)';
-    coverArt.style.opacity    = '0';
-  }, albumArtSlideOutTime);
-
-  // Fin : masquer le player
-  setTimeout(() => {
-    player.style.display = 'none';
-  }, totalDuration);
-}
+    bgBlur.style.transform       = 'scaleX
