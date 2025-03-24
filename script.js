@@ -11,13 +11,13 @@ let trackDuration = 180;
 let isPaused = false;
 
 /** Récupération des paramètres d'URL **/
-const urlParams           = new URLSearchParams(window.location.search);
-const customWidth         = urlParams.get('width');
-const customColor         = urlParams.get('color');
-const albumParam          = urlParams.get('album');
-const opacityParam        = urlParams.get('opacity');
-const hostApp             = urlParams.get('hostApp');
-const popupDurationParam  = urlParams.get('popupDuration');
+const urlParams          = new URLSearchParams(window.location.search);
+const customWidth        = urlParams.get('width');
+const customColor        = urlParams.get('color');
+const albumParam         = urlParams.get('album');
+const opacityParam       = urlParams.get('opacity');
+const hostApp            = urlParams.get('hostApp');
+const popupDurationParam = urlParams.get('popupDuration');
 
 /** Sélection d’éléments DOM **/
 const infoDiv   = document.getElementById('infoDiv');
@@ -39,6 +39,8 @@ if (isWpfMode) {
 if (playerDiv) {
   // Au départ, on le cache
   playerDiv.style.display = 'none';
+
+  // Largeur personnalisée si 'width' est fourni
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
   }
@@ -58,7 +60,7 @@ const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
   endpoint: '/',
-  //password: 'streamer.bot'
+  // password: 'streamer.bot'
 });
 
 let lastSongName = "";
@@ -67,11 +69,12 @@ let lastSongName = "";
  * Réception de l'événement "General.Custom"
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
+  // On ne traite que les payloads ayant widget = 'spot2sbPlayer'
   if (data?.widget !== 'spot2sbPlayer') return;
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // Si noSong est true, on masque le player
+  // Si noSong = true => on masque le player et on arrête
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
@@ -79,13 +82,13 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // Mode WPF
+  // Mode WPF : on enlève le message de "non connecté"
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
   }
 
-  // Afficher le player
+  // Afficher le player (si masqué)
   if (playerDiv) {
     playerDiv.style.display = 'block';
   }
@@ -136,10 +139,9 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarFill     = document.getElementById("time-bar-fill");
   const timeBarBg       = document.getElementById("time-bar-bg");
   const timeRemaining   = document.getElementById("time-remaining");
-  // Élément pour afficher le pseudo (ex: <div id="requester-name">)
-  const requesterNameEl = document.getElementById("requester-name");
+  const requesterNameEl = document.getElementById("requester-name"); // div pour afficher le pseudo
 
-  // Mise à jour de l'arrière-plan flou
+  // Arrière-plan flou
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   }
@@ -386,7 +388,9 @@ function rgbToHsl(r, g, b) {
     s = 0;
   } else {
     const diff = max - min;
-    s = (l > 0.5) ? diff / (2 - max - min) : diff / (max + min);
+    s = (l > 0.5)
+      ? diff / (2 - max - min)
+      : diff / (max + min);
     switch (max) {
       case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
       case g: h = (b - r) / diff + 2; break;
@@ -409,7 +413,9 @@ function hslToRgb(h, s, l) {
     if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
     return p;
   };
-  const q = (l < 0.5) ? (l * (1 + s)) : (l + s - l*s);
+  const q = (l < 0.5)
+    ? (l * (1 + s))
+    : (l + s - l * s);
   const p = 2*l - q;
 
   const r = hue2rgb(p, q, h + 1/3);
@@ -430,6 +436,7 @@ function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
 
+  // Durées totales
   const totalDuration       = popupDurationSec * 1000;
   const albumArtInDuration  = totalDuration * 0.2;
   const expansionDuration   = totalDuration * 0.15;
@@ -437,8 +444,10 @@ function handlePopupDisplay() {
   const collapseDuration    = totalDuration * 0.15;
   const albumArtOutDuration = totalDuration * 0.2;
 
+  // Petits décalages
   const delayExpInfo    = 500;
   const delayCollapseBG = 500;
+
   let infoBarShift      = 0;
 
   const player   = document.getElementById('player');
@@ -462,7 +471,7 @@ function handlePopupDisplay() {
   setTimeout(() => {
     const albumArtRect = coverArt.getBoundingClientRect();
     const playerRect   = player.getBoundingClientRect();
-    const offsetX      = albumArtRect.left - playerRect.left + albumArtRect.width / 2;
+    const offsetX      = albumArtRect.left - playerRect.left + (albumArtRect.width / 2);
     const origin       = `${offsetX}px center`;
 
     // bgBlur
@@ -470,4 +479,50 @@ function handlePopupDisplay() {
     bgBlur.style.transition      = `transform ${expansionDuration}ms ease-out`;
     bgBlur.style.transform       = 'scaleX(0)';
     void bgBlur.offsetWidth;
-    bgBlur.style.transform       = 'scaleX
+    bgBlur.style.transform       = 'scaleX(1)';
+
+    // Calcul pour l'infoBar
+    infoBarShift = albumArtRect.width * 0.5;
+  }, albumArtInDuration);
+
+  // infoBar expansion
+  setTimeout(() => {
+    const albumArtRect = coverArt.getBoundingClientRect();
+    const playerRect   = player.getBoundingClientRect();
+    const offsetX      = albumArtRect.left - playerRect.left + (albumArtRect.width / 2);
+    const origin       = `${offsetX}px center`;
+
+    infoBar.style.transformOrigin = origin;
+    infoBar.style.transition      = `transform ${expansionDuration}ms ease-out`;
+    infoBar.style.transform       = `translateX(-${infoBarShift}px) scaleX(0)`;
+    void infoBar.offsetWidth;
+    infoBar.style.transform       = 'translateX(0) scaleX(1)';
+  }, albumArtInDuration + delayExpInfo);
+
+  // Phase 3 : Affichage
+  const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
+
+  // Phase 4 : Rétraction
+  setTimeout(() => {
+    infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
+    infoBar.style.transform  = `translateX(-${infoBarShift}px) scaleX(0)`;
+  }, collapseStartTime);
+
+  setTimeout(() => {
+    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
+    bgBlur.style.transform  = 'scaleX(0)';
+  }, collapseStartTime + delayCollapseBG);
+
+  // Phase 5 : Slide out
+  const albumArtSlideOutTime = collapseStartTime + collapseDuration;
+  setTimeout(() => {
+    coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
+    coverArt.style.transform  = 'translateX(100%)';
+    coverArt.style.opacity    = '0';
+  }, albumArtSlideOutTime);
+
+  // Fin : masquer le player
+  setTimeout(() => {
+    player.style.display = 'none';
+  }, totalDuration);
+}
