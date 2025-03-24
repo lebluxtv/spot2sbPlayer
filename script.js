@@ -103,6 +103,8 @@ client.on('General.Custom', ({ event, data }) => {
 
   // Récupération du nom du requester (s'il existe)
   const requesterName = data.requesterName || "";
+  // Récupération de la PFP du requester (si existe)
+  const requesterPfpUrl = data.requesterPfpUrl || "";
 
   // Mise à jour de la piste
   if (data.songName) {
@@ -112,10 +114,10 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
-    // On appelle loadNewTrack en lui passant requesterName
+    // On appelle loadNewTrack en lui passant requesterName et requesterPfpUrl
     if (songName !== lastSongName) {
       lastSongName = songName;
-      loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName);
+      loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName, requesterPfpUrl);
 
       // Lancer l'animation popup si popupDuration est défini
       if (popupDurationParam) {
@@ -131,7 +133,7 @@ client.on('General.Custom', ({ event, data }) => {
 /************************************************************
  * loadNewTrack
  ************************************************************/
-function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName) {
+function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName, requesterPfpUrl) {
   const bgBlur          = document.getElementById("bg-blur");
   const coverArt        = document.getElementById("cover-art");
   const trackNameSpan   = document.getElementById("track-name");
@@ -140,6 +142,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarBg       = document.getElementById("time-bar-bg");
   const timeRemaining   = document.getElementById("time-remaining");
   const requesterNameEl = document.getElementById("requester-name"); // div pour afficher le pseudo
+  const requesterPfpEl  = document.getElementById("requester-pfp");  // div pour afficher la PFP
 
   // Arrière-plan flou
   if (bgBlur) {
@@ -169,6 +172,17 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     } else {
       requesterNameEl.textContent = "";
       requesterNameEl.style.display = "none";
+    }
+  }
+
+  // Affichage de la PFP (si URL non vide)
+  if (requesterPfpEl) {
+    if (requesterPfpUrl) {
+      requesterPfpEl.style.backgroundImage = `url('${requesterPfpUrl}')`;
+      requesterPfpEl.style.display = "block";
+    } else {
+      requesterPfpEl.style.backgroundImage = "";
+      requesterPfpEl.style.display = "none";
     }
   }
 
@@ -415,7 +429,7 @@ function hslToRgb(h, s, l) {
   };
   const q = (l < 0.5)
     ? (l * (1 + s))
-    : (l + s - l * s);
+    : (l + s - l*s);
   const p = 2*l - q;
 
   const r = hue2rgb(p, q, h + 1/3);
