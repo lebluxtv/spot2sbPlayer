@@ -17,17 +17,30 @@ body {
 
 .player {
   position: relative;
-max-width: 600px;  /* taille maxi */
+  max-width: 600px;  /* taille maxi */
   width: 100%;       /* prend la largeur disponible */
   height: 100px;
   overflow: hidden;
   border-radius: 10px;
 }
+
+/* Nom du requester */
 .requester-name {
   font-size: 0.8rem;
   opacity: 0.8;
   margin-bottom: 6px; /* pour séparer un peu du timer */
   display: none;      /* masqué par défaut */
+}
+
+/* PFP du requester */
+.requester-pfp {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 6px;
+  display: none; /* masqué par défaut */
 }
 
 /* Arrière-plan flou */
