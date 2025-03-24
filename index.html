@@ -7,9 +7,7 @@
 </head>
 <body>
   <!-- Message affiché par défaut si aucune musique n'est lue -->
-<div id="infoDiv" style="">
-</div>
-
+  <div id="infoDiv" style=""></div>
 
   <!-- Le lecteur, masqué tant qu’aucune musique n’est détectée -->
   <div class="player" id="player" style="display: none;">
@@ -29,8 +27,13 @@
 
         <!-- Artiste -->
         <div class="artist-name" id="artist-name"></div>
-<!-- NOUVEAU : zone pour afficher le pseudo du requester -->
+
+        <!-- Pseudo du requester -->
         <div class="requester-name" id="requester-name" style="display: none;"></div>
+
+        <!-- NOUVEAU : zone pour afficher la PFP du requester -->
+        <div class="requester-pfp" id="requester-pfp" style="display: none;"></div>
+
         <!-- Barre de progression + timer -->
         <div class="time-row">
           <div class="time-bar-bg" id="time-bar-bg">
@@ -51,7 +54,7 @@
   <!-- Librairie ColorThief (optionnelle) -->
   <script src="https://unpkg.com/colorthief/dist/color-thief.umd.js"></script>
 
-  <!-- Script principal (déplacé dans un autre fichier) -->
+  <!-- Script principal -->
   <script src="script.js"></script>
 </body>
 </html>
