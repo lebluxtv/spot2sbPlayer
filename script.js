@@ -215,7 +215,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
-    // Pour le slide in, on ne transitionne que la translation, pas l'opacité
+    // Pour le slide in, on ne transitionne que la translation (pas l'opacité)
     coverArt.style.transition = `transform 600ms ease-out`;
     coverArt.style.transform = 'translateX(-100%)';
     // Forcer le reflow
@@ -224,6 +224,10 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     coverArt.style.opacity = '1';
     if (albumParam === 'disc') {
       coverArt.classList.add('disc-mode');
+      // Après le slide in, réinitialiser le transform inline pour permettre la rotation
+      setTimeout(() => {
+        coverArt.style.transform = '';
+      }, 650);
     } else {
       coverArt.classList.remove('disc-mode');
     }
