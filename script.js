@@ -584,8 +584,12 @@ function handlePopupDisplay() {
     coverArt.style.opacity    = '0';
   }, albumArtFadeOutTime);
 
-  // Fin : masquer le player
+  // Fin : masquer le player et cacher définitivement la mini PFP
   setTimeout(() => {
     player.style.display = 'none';
+    const requesterPfpEl = document.getElementById('requester-pfp');
+    if (requesterPfpEl) {
+      requesterPfpEl.style.display = 'none';
+    }
   }, totalDuration);
 }
