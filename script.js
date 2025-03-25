@@ -131,6 +131,42 @@ client.on('General.Custom', ({ event, data }) => {
 });
 
 /************************************************************
+ * swapToRequesterPfp / swapBackToAlbumArt
+ * Utilisées pour remplacer temporairement la cover par la PFP
+ ************************************************************/
+function swapToRequesterPfp(coverArtEl, pfpUrl, isDiscMode) {
+  // On fait une petite animation fade
+  coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
+  coverArtEl.style.opacity = '0';
+  setTimeout(() => {
+    // Quand l'opacity est à 0, on change l'image
+    coverArtEl.style.backgroundImage = `url('${pfpUrl}')`;
+    // Si on est en mode disc, on ajoute la classe 'disc-mode'
+    if (isDiscMode) {
+      coverArtEl.classList.add('disc-mode');
+    } else {
+      coverArtEl.classList.remove('disc-mode');
+    }
+    coverArtEl.style.opacity = '1';
+  }, 600);
+}
+
+function swapBackToAlbumArt(coverArtEl, albumArtUrl, isDiscMode) {
+  coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
+  coverArtEl.style.opacity = '0';
+  setTimeout(() => {
+    // On remet l'album
+    coverArtEl.style.backgroundImage = `url('${albumArtUrl}')`;
+    if (isDiscMode) {
+      coverArtEl.classList.add('disc-mode');
+    } else {
+      coverArtEl.classList.remove('disc-mode');
+    }
+    coverArtEl.style.opacity = '1';
+  }, 600);
+}
+
+/************************************************************
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName, requesterPfpUrl) {
@@ -149,7 +185,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
   }
 
-  // Pochette : affichage immédiat
+  // Pochette
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
@@ -190,13 +226,16 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
 
-  // Mise à jour barre + timer
+  // Retrait temporaire de la transition pour ajuster la barre
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
+  // Mise à jour immédiate
   updateBarAndTimer();
+  // Forcer un reflow
   if (timeBarFill) {
     void timeBarFill.offsetWidth;
+    // Réactiver la transition
     timeBarFill.style.transition = 'width 0.5s linear';
   }
 
@@ -226,7 +265,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     if (artistNameEl)  artistNameEl.style.color          = colorHex;
     if (timeRemaining) timeRemaining.style.color          = colorHex;
   } else {
-    // ColorThief
+    // Utilisation de ColorThief pour extraire une couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -258,13 +297,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
 
-  // --- Séquence "swap" album art -> PFP -> album art (optionnel) ---
+  // --- Séquence pour la PFP ---
   if (requesterPfpUrl) {
-    // On attend 3s avant de montrer la PFP à la place de la cover
+    // 1) après 3s, on swap vers la PFP
     setTimeout(() => {
       swapToRequesterPfp(coverArt, requesterPfpUrl, (albumParam === 'disc'));
 
-      // Puis 2s plus tard, on revient à l'album
+      // 2) 2s plus tard, on revient à l'album art
       setTimeout(() => {
         swapBackToAlbumArt(coverArt, albumArtUrl, (albumParam === 'disc'));
       }, 2000);
@@ -550,34 +589,4 @@ function handlePopupDisplay() {
   setTimeout(() => {
     player.style.display = 'none';
   }, totalDuration);
-}
-
-/************************************************************
- * swapToRequesterPfp / swapBackToAlbumArt
- ************************************************************/
-function swapToRequesterPfp(coverArtEl, pfpUrl, isDiscMode) {
-  coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
-  coverArtEl.style.opacity = '0';
-  setTimeout(() => {
-    coverArtEl.style.backgroundImage = `url('${pfpUrl}')`;
-    if (isDiscMode) {
-      coverArtEl.classList.add('disc-mode');
-    } else {
-      coverArtEl.classList.remove('disc-mode');
-    }
-    coverArtEl.style.opacity = '1';
-  }, 600);
-}
-function swapBackToAlbumArt(coverArtEl, albumArtUrl, isDiscMode) {
-  coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
-  coverArtEl.style.opacity = '0';
-  setTimeout(() => {
-    coverArtEl.style.backgroundImage = `url('${albumArtUrl}')`;
-    if (isDiscMode) {
-      coverArtEl.classList.add('disc-mode');
-    } else {
-      coverArtEl.classList.remove('disc-mode');
-    }
-    coverArtEl.style.opacity = '1';
-  }, 600);
 }
