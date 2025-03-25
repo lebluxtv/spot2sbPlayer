@@ -6,31 +6,18 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Message par défaut si aucune musique n'est lue -->
   <div id="infoDiv"></div>
 
-  <!-- Le lecteur, masqué tant qu’aucune musique n’est détectée -->
   <div class="player" id="player" style="display:none;">
-    <!-- Arrière-plan flou -->
     <div class="bg-blur" id="bg-blur"></div>
 
-    <!-- Conteneur principal (album art + info bar + pfp) -->
     <div class="player-content">
-      <!-- Pochette album -->
       <div class="cover-art" id="cover-art"></div>
 
-      <!-- Zone texte + barre -->
       <div class="info-bar">
-        <!-- Titre (défile si trop long) -->
-        <div class="track-name">
-          <span id="track-name"></span>
-        </div>
-        <!-- Artiste -->
+        <div class="track-name"><span id="track-name"></span></div>
         <div class="artist-name" id="artist-name"></div>
-        <!-- Nom du requester (par-dessus, en absolute) -->
-        <div class="requester-name" id="requester-name" style="display:none;"></div>
-
-        <!-- Barre de progression + timer -->
+        <div class="requester-name" id="requester-name"></div>
         <div class="time-row">
           <div class="time-bar-bg" id="time-bar-bg">
             <div class="time-bar-fill" id="time-bar-fill"></div>
@@ -39,16 +26,12 @@
         </div>
       </div>
 
-      <!-- Mini‑PFP en haut à droite -->
-      <div class="requester-pfp" id="requester-pfp" style="display:none;"></div>
+      <div class="requester-pfp" id="requester-pfp"></div>
     </div>
   </div>
 
-  <!-- Librairies externes -->
   <script src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js"></script>
   <script src="https://unpkg.com/colorthief/dist/color-thief.umd.js"></script>
-
-  <!-- Script principal -->
   <script src="script.js"></script>
 </body>
 </html>
