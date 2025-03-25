@@ -577,13 +577,12 @@ function handlePopupDisplay() {
     bgBlur.style.transform  = 'scaleX(0)';
   }, collapseStartTime + delayCollapseBG);
 
-  // Phase 5 : Slide out
-  const albumArtSlideOutTime = collapseStartTime + collapseDuration;
+  // Phase 5 : Fade out du cover art au lieu d'un slide pour éviter les sauts
+  const albumArtFadeOutTime = collapseStartTime + collapseDuration;
   setTimeout(() => {
-    coverArt.style.transition = `transform ${albumArtOutDuration}ms ease-in, opacity ${albumArtOutDuration}ms ease-in`;
-    coverArt.style.transform  = 'translateX(100%)';
+    coverArt.style.transition = `opacity ${albumArtOutDuration}ms ease-in`;
     coverArt.style.opacity    = '0';
-  }, albumArtSlideOutTime);
+  }, albumArtFadeOutTime);
 
   // Fin : masquer le player
   setTimeout(() => {
