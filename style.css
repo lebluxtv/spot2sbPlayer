@@ -15,7 +15,6 @@ body {
   height: 100vh;
 }
 
-/* Player principal */
 .player {
   position: relative;
   max-width: 600px;
@@ -25,10 +24,10 @@ body {
   border-radius: 10px;
 }
 
-/* Arrière-plan flou */
+/* Arrière‑plan flou */
 .bg-blur {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
   background-size: cover;
   background-position: center;
   filter: blur(8px);
@@ -39,14 +38,13 @@ body {
 .bg-blur::after {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
   background: radial-gradient(circle, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.9) 100%);
-  pointer-events: none;
 }
 
-/* Conteneur principal des éléments (album art + info bar + pfp) */
+/* Conteneur principal */
 .player-content {
-  position: relative;  /* pour positionner la pfp par-dessus */
+  position: relative;
   display: flex;
   align-items: stretch;
   height: 100%;
@@ -54,9 +52,9 @@ body {
   z-index: 2;
 }
 
-/* Pochette album à gauche */
+/* Pochette album */
 .cover-art {
-  flex: 0 0 80px; /* largeur fixe de 80px, ajustez selon vos goûts */
+  flex: 0 0 80px;
   aspect-ratio: 1/1;
   background-size: cover;
   background-position: center;
@@ -66,59 +64,76 @@ body {
   border-radius: 50%;
   animation: disc-spin 6s linear infinite;
 }
-@keyframes disc-spin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+@keyframes disc-spin { to { transform: rotate(360deg); } }
 
-/* La zone info (titre, artiste, barre) occupe tout l'espace restant */
+/* Zone texte + progression */
 .info-bar {
-  flex: 1;                /* prend la place disponible */
-  position: relative;     /* pour le placement interne */
-  padding: 8px 8px 8px 0; /* marge interne (peut ajuster) */
-  box-sizing: border-box;
-  /* On évite un padding-right ici pour laisser le texte s'étendre.
-     La PFP sera en absolute par-dessus. */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 60px; /* espace pour la mini‑PFP */
 }
 
-/* Titre de la chanson */
+/* Titre */
 .track-name {
-  position: relative;
   overflow: hidden;
   white-space: nowrap;
-  width: 100%;
-  height: 1.4em;
-  margin-bottom: 4px;
+  font-size: 1rem;
+  margin-bottom: 2px;
 }
 .track-name span {
   display: inline-block;
-  animation: none;
-  padding-left: 0;
-}
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
 }
 
 /* Artiste */
 .artist-name {
   font-size: 0.9rem;
-  margin-bottom: 6px;
   opacity: 0.9;
+  margin-bottom: 4px;
 }
 
-/* Nom du requester : on l'affiche par-dessus en haut à droite */
+/* Requested by sous l’artiste */
 .requester-name {
-  position: absolute;
-  top: 8px;
-  right: 60px; /* pour laisser la place à la pfp */
   font-size: 0.8rem;
-  opacity: 0.9;
-  display: none; /* masqué par défaut */
-  pointer-events: none; /* pour ne pas bloquer la souris */
+  opacity: 0.8;
+  margin-bottom: 4px;
+  display: none;
 }
 
-/* PFP du requester, tout en haut à droite */
+/* Barre de progression + timer */
+.time-row {
+  position: relative;
+  height: 20px;
+  margin-top: 4px;
+}
+.time-bar-bg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 8px;
+  background: #444;
+  border-radius: 4px;
+}
+.time-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: #0f0;
+  transition: width 0.5s linear;
+}
+.time-remaining {
+  position: absolute;
+  right: 8px;
+  top: -2px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* Mini‑PFP à droite */
 .requester-pfp {
   position: absolute;
   top: 8px;
@@ -130,72 +145,9 @@ body {
   background-position: center;
   box-shadow: 0 0 8px rgba(0,0,0,0.5);
   z-index: 3;
-  pointer-events: none;
+  display: none;
 }
 
-/* Barre de progression + timer */
-.time-row {
-  position: relative;
-  height: 24px;
-  margin-top: 6px;
-}
-.time-bar-bg {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 10px;
-  background: #444;
-  border-radius: 4px;
-  overflow: hidden;
-}
-.time-bar-fill {
-  position: absolute;
-  left: 0; 
-  top: 0;
-  height: 100%;
-  width: 100%;
-  background: #0f0;
-  transition: width 0.5s linear;
-}
-.time-remaining {
-  position: absolute;
-  right: 8px;
-  top: 0;
-  z-index: 2;
-  font-size: 0.9rem;
-  font-weight: bold;
-  pointer-events: none;
-}
-
-/* Animations slide in */
-@keyframes slideInLeft {
-  from { transform: translateX(-150%); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-@keyframes slideInRight {
-  from { transform: translateX(150%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-@keyframes slideInTop {
-  from { transform: translateY(-50%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-.slide-in-left {
-  animation: slideInLeft 1.5s forwards;
-}
-.slide-in-right {
-  animation: slideInRight 1.5s forwards;
-}
-.slide-in-top {
-  animation: slideInTop 1.5s forwards;
-}
-
-/* Optionnel : slideOutLeft */
-@keyframes slideOutLeft {
-  from { transform: translateX(0);   opacity:1; }
-  to   { transform: translateX(-150%); opacity:0; }
-}
-.slide-out-left {
-  animation: slideOutLeft 1.5s forwards;
-}
+/* Animations */
+@keyframes slideInLeft { from { transform: translateX(-150%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.slide-in-left { animation: slideInLeft 1s forwards; }
