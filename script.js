@@ -183,12 +183,14 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   // Arrière-plan flou
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
+    bgBlur.style.opacity = '1';
   }
 
   // Pochette
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
+    coverArt.style.opacity = '1';
     if (albumParam === 'disc') {
       coverArt.classList.add('disc-mode');
     } else {
@@ -197,14 +199,21 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   }
 
   // Titre & artiste
-  if (trackNameSpan) trackNameSpan.textContent = songName;
-  if (artistNameEl)  artistNameEl.textContent  = artistName;
+  if (trackNameSpan) {
+    trackNameSpan.textContent = songName;
+    trackNameSpan.style.opacity = '1';
+  }
+  if (artistNameEl) {
+    artistNameEl.textContent  = artistName;
+    artistNameEl.style.opacity = '1';
+  }
 
   // Affichage du requester (si non vide)
   if (requesterNameEl) {
     if (requesterName) {
       requesterNameEl.textContent = "Requested by " + requesterName;
       requesterNameEl.style.display = "block";
+      requesterNameEl.style.opacity = '1';
     } else {
       requesterNameEl.textContent = "";
       requesterNameEl.style.display = "none";
@@ -216,6 +225,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     if (requesterPfpUrl) {
       requesterPfpEl.style.backgroundImage = `url('${requesterPfpUrl}')`;
       requesterPfpEl.style.display = "block";
+      requesterPfpEl.style.opacity = '1';
     } else {
       requesterPfpEl.style.backgroundImage = "";
       requesterPfpEl.style.display = "none";
@@ -494,102 +504,80 @@ function hslToRgb(h, s, l) {
 
 /************************************************************
  * handlePopupDisplay
- * Séquence d'animation "stretch" (scaleX) si popupDuration est défini
+ * Séquence d'animation fade-out dans l'ordre :
+ * 1. Fade out du background, du titre, de l'artiste et de la barre de progression
+ * 2. Fade out du "Requested by" et de la mini PFP (si présents)
+ * 3. Fade out de la pochette (album art)
  ************************************************************/
 function handlePopupDisplay() {
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
 
-  // Durées totales
-  const totalDuration       = popupDurationSec * 1000;
-  const albumArtInDuration  = totalDuration * 0.2;
-  const expansionDuration   = totalDuration * 0.15;
-  const displayDuration     = totalDuration * 0.3;
-  const collapseDuration    = totalDuration * 0.15;
-  const albumArtOutDuration = totalDuration * 0.2;
+  const totalDuration = popupDurationSec * 1000;
+  const phase1Duration = totalDuration * 0.4; // fade out background, title, artist, progress bar
+  const phase2Duration = totalDuration * 0.2; // fade out requester info (si présent)
+  const phase3Duration = totalDuration * 0.4; // fade out album art
 
-  // Petits décalages
-  const delayExpInfo    = 500;
-  const delayCollapseBG = 500;
-
-  let infoBarShift      = 0;
-
-  const player   = document.getElementById('player');
+  const player = document.getElementById('player');
+  const bgBlur = document.getElementById('bg-blur');
+  const trackNameEl = document.getElementById('track-name');
+  const artistNameEl = document.getElementById('artist-name');
+  const timeRow = document.querySelector('.time-row');
+  const requesterNameEl = document.getElementById('requester-name');
+  const requesterPfpEl = document.getElementById('requester-pfp');
   const coverArt = document.getElementById('cover-art');
-  const bgBlur   = document.getElementById('bg-blur');
-  const infoBar  = document.querySelector('.info-bar');
 
-  // On s'assure que le player est affiché
-  player.style.display = 'block';
-  coverArt.style.display = 'block';
+  // Assurer que tous les éléments sont visibles et à opacité 1
+  if (bgBlur) bgBlur.style.opacity = '1';
+  if (trackNameEl) trackNameEl.style.opacity = '1';
+  if (artistNameEl) artistNameEl.style.opacity = '1';
+  if (timeRow) timeRow.style.opacity = '1';
+  if (requesterNameEl) requesterNameEl.style.opacity = '1';
+  if (requesterPfpEl) requesterPfpEl.style.opacity = '1';
+  if (coverArt) coverArt.style.opacity = '1';
 
-  // Phase 1 : Slide in album art
-  coverArt.style.transition = `transform ${albumArtInDuration}ms ease-out, opacity ${albumArtInDuration}ms ease-out`;
-  coverArt.style.transform  = 'translateX(-100%)';
-  coverArt.style.opacity    = '0';
-  void coverArt.offsetWidth;
-  coverArt.style.transform  = 'translateX(0)';
-  coverArt.style.opacity    = '1';
+  // Phase 1 : Fade out du background, titre, artiste et barre de progression
+  if (bgBlur) {
+    bgBlur.style.transition = `opacity ${phase1Duration}ms ease-out`;
+    bgBlur.style.opacity = '0';
+  }
+  if (trackNameEl) {
+    trackNameEl.style.transition = `opacity ${phase1Duration}ms ease-out`;
+    trackNameEl.style.opacity = '0';
+  }
+  if (artistNameEl) {
+    artistNameEl.style.transition = `opacity ${phase1Duration}ms ease-out`;
+    artistNameEl.style.opacity = '0';
+  }
+  if (timeRow) {
+    timeRow.style.transition = `opacity ${phase1Duration}ms ease-out`;
+    timeRow.style.opacity = '0';
+  }
 
-  // Phase 2 : Expansion (bgBlur & infoBar)
+  // Phase 2 : Après phase 1, fade out de la mention "Requested by" et de la mini PFP (si présents)
   setTimeout(() => {
-    const albumArtRect = coverArt.getBoundingClientRect();
-    const playerRect   = player.getBoundingClientRect();
-    const offsetX      = albumArtRect.left - playerRect.left + (albumArtRect.width / 2);
-    const origin       = `${offsetX}px center`;
+    if (requesterNameEl && requesterNameEl.textContent.trim() !== "") {
+      requesterNameEl.style.transition = `opacity ${phase2Duration}ms ease-out`;
+      requesterNameEl.style.opacity = '0';
+    }
+    if (requesterPfpEl && requesterPfpEl.style.display !== "none") {
+      requesterPfpEl.style.transition = `opacity ${phase2Duration}ms ease-out`;
+      requesterPfpEl.style.opacity = '0';
+    }
+  }, phase1Duration);
 
-    // bgBlur
-    bgBlur.style.transformOrigin = origin;
-    bgBlur.style.transition      = `transform ${expansionDuration}ms ease-out`;
-    bgBlur.style.transform       = 'scaleX(0)';
-    void bgBlur.offsetWidth;
-    bgBlur.style.transform       = 'scaleX(1)';
-
-    // Calcul pour l'infoBar
-    infoBarShift = albumArtRect.width * 0.5;
-  }, albumArtInDuration);
-
-  // infoBar expansion
+  // Phase 3 : Après phase 1 et 2, fade out de l'album art
   setTimeout(() => {
-    const albumArtRect = coverArt.getBoundingClientRect();
-    const playerRect   = player.getBoundingClientRect();
-    const offsetX      = albumArtRect.left - playerRect.left + (albumArtRect.width / 2);
-    const origin       = `${offsetX}px center`;
+    if (coverArt) {
+      coverArt.style.transition = `opacity ${phase3Duration}ms ease-out`;
+      coverArt.style.opacity = '0';
+    }
+  }, phase1Duration + phase2Duration);
 
-    infoBar.style.transformOrigin = origin;
-    infoBar.style.transition      = `transform ${expansionDuration}ms ease-out`;
-    infoBar.style.transform       = `translateX(-${infoBarShift}px) scaleX(0)`;
-    void infoBar.offsetWidth;
-    infoBar.style.transform       = 'translateX(0) scaleX(1)';
-  }, albumArtInDuration + delayExpInfo);
-
-  // Phase 3 : Affichage
-  const collapseStartTime = albumArtInDuration + expansionDuration + displayDuration;
-
-  // Phase 4 : Rétraction
+  // Final : Après la durée totale, masquer le player
   setTimeout(() => {
-    infoBar.style.transition = `transform ${collapseDuration}ms ease-in`;
-    infoBar.style.transform  = `translateX(-${infoBarShift}px) scaleX(0)`;
-  }, collapseStartTime);
-
-  setTimeout(() => {
-    bgBlur.style.transition = `transform ${collapseDuration}ms ease-in`;
-    bgBlur.style.transform  = 'scaleX(0)';
-  }, collapseStartTime + delayCollapseBG);
-
-  // Phase 5 : Fade out du cover art au lieu d'un slide pour éviter les sauts
-  const albumArtFadeOutTime = collapseStartTime + collapseDuration;
-  setTimeout(() => {
-    coverArt.style.transition = `opacity ${albumArtOutDuration}ms ease-in`;
-    coverArt.style.opacity    = '0';
-  }, albumArtFadeOutTime);
-
-  // Fin : masquer le player et cacher définitivement la mini PFP
-  setTimeout(() => {
-    player.style.display = 'none';
-    const requesterPfpEl = document.getElementById('requester-pfp');
-    if (requesterPfpEl) {
-      requesterPfpEl.style.display = 'none';
+    if (player) {
+      player.style.display = 'none';
     }
   }, totalDuration);
 }
