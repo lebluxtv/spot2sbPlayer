@@ -5,6 +5,16 @@
   box-sizing: border-box;
 }
 
+/* 
+  On force le html et le body à prendre toute la taille disponible 
+  et on les transforme en conteneur flex 
+  pour centrer le contenu horizontalement ET verticalement 
+*/
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   background: #505050;
   font-family: sans-serif;
@@ -12,9 +22,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
 }
 
+/* Le conteneur principal du player */
 .player {
   position: relative;
   max-width: 600px;
@@ -42,7 +52,7 @@ body {
   background: radial-gradient(circle, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.9) 100%);
 }
 
-/* Conteneur principal */
+/* Conteneur principal interne */
 .player-content {
   position: relative;
   display: flex;
@@ -64,7 +74,9 @@ body {
   border-radius: 50%;
   animation: disc-spin 6s linear infinite;
 }
-@keyframes disc-spin { to { transform: rotate(360deg); } }
+@keyframes disc-spin {
+  to { transform: rotate(360deg); }
+}
 
 /* Zone texte + progression */
 .info-bar {
@@ -149,5 +161,10 @@ body {
 }
 
 /* Animations */
-@keyframes slideInLeft { from { transform: translateX(-150%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-.slide-in-left { animation: slideInLeft 1s forwards; }
+@keyframes slideInLeft {
+  from { transform: translateX(-150%); opacity: 0; }
+  to   { transform: translateX(0);      opacity: 1; }
+}
+.slide-in-left {
+  animation: slideInLeft 1s forwards;
+}
