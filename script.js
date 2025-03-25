@@ -552,8 +552,8 @@ function handlePopupDisplay() {
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
 
   const totalDuration = popupDurationSec * 1000;
-  const phase1Duration = totalDuration * 0.4; // fade out background, title, artist, progress bar
-  const phase2Duration = totalDuration * 0.2; // fade out requester info (si présent)
+  const phase1Duration = totalDuration * 0.6; // fade out background, title, artist, progress bar
+  const phase2Duration = totalDuration * 0.4; // fade out requester info (si présent)
   const phase3Duration = totalDuration * 0.4; // fade out album art
 
   const player = document.getElementById('player');
