@@ -17,8 +17,8 @@ body {
 
 .player {
   position: relative;
-  max-width: 600px;  /* taille maxi */
-  width: 100%;       /* prend la largeur disponible */
+  max-width: 600px;
+  width: 100%;
   height: 100px;
   overflow: hidden;
   border-radius: 10px;
@@ -28,11 +28,11 @@ body {
 .requester-name {
   font-size: 0.8rem;
   opacity: 0.8;
-  margin-bottom: 6px; /* pour séparer un peu du timer */
-  display: none;      /* masqué par défaut */
+  margin-bottom: 6px;
+  display: none;
 }
 
-/* PFP du requester */
+/* Mini‑PFP du requester (toujours visible à droite) */
 .requester-pfp {
   position: absolute;
   right: 16px;
@@ -45,8 +45,8 @@ body {
   background-position: center;
   box-shadow: 0 0 8px rgba(0,0,0,0.5);
   z-index: 3;
+  pointer-events: none;
 }
-
 
 /* Arrière-plan flou */
 .bg-blur {
@@ -63,20 +63,17 @@ body {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  /* Exemple : un radial gradient qui va du gris foncé (0.6) au noir (0.9) */
   background: radial-gradient(circle, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.9) 100%);
-  pointer-events: none;
 }
 
 /* Contenu (pochette, infos, timer) */
 .player-content {
-  justify-content: center; 
   position: relative;
-  z-index: 2;
   display: flex;
   align-items: stretch;
   height: 100%;
   padding: 0 10px;
+  z-index: 2;
 }
 
 .cover-art {
@@ -92,7 +89,7 @@ body {
   animation: disc-spin 6s linear infinite;
 }
 @keyframes disc-spin {
-  0%   { transform: rotate(0deg); }
+  0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
@@ -103,6 +100,7 @@ body {
   justify-content: space-between;
   flex: 1;
   min-width: 0;
+  padding-right: 60px; /* espace pour mini‑PFP */
 }
 
 /* Titre */
@@ -120,7 +118,7 @@ body {
   padding-left: 0;
 }
 @keyframes marquee {
-  0%   { transform: translateX(0); }
+  0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
 
@@ -145,11 +143,10 @@ body {
   height: 10px;
   background: #444;
   border-radius: 4px;
-  overflow: hidden;
 }
 .time-bar-fill {
   position: absolute;
-  left: 0; 
+  left: 0;
   top: 0;
   height: 100%;
   width: 100%;
@@ -166,34 +163,12 @@ body {
   pointer-events: none;
 }
 
-/* Animations slide in */
-@keyframes slideInLeft {
-  from { transform: translateX(-150%); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-@keyframes slideInRight {
-  from { transform: translateX(150%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-@keyframes slideInTop {
-  from { transform: translateY(-50%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-.slide-in-left {
-  animation: slideInLeft 1.5s forwards;
-}
-.slide-in-right {
-  animation: slideInRight 1.5s forwards;
-}
-.slide-in-top {
-  animation: slideInTop 1.5s forwards;
-}
-
-/* Optionnel : slideOutLeft si besoin */
-@keyframes slideOutLeft {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-150%); opacity: 0; }
-}
-.slide-out-left {
-  animation: slideOutLeft 1.5s forwards;
-}
+/* Animations slide */
+@keyframes slideInLeft { from { transform: translateX(-150%); opacity:0;} to {transform: translateX(0); opacity:1;} }
+@keyframes slideInRight { from { transform: translateX(150%); opacity:0;} to {transform: translateX(0); opacity:1;} }
+@keyframes slideInTop { from { transform: translateY(-50%); opacity:0;} to {transform: translateY(0); opacity:1;} }
+.slide-in-left { animation: slideInLeft 1.5s forwards; }
+.slide-in-right { animation: slideInRight 1.5s forwards; }
+.slide-in-top { animation: slideInTop 1.5s forwards; }
+@keyframes slideOutLeft { from {transform: translateX(0); opacity:1;} to {transform: translateX(-150%); opacity:0;} }
+.slide-out-left { animation: slideOutLeft 1.5s forwards; }
