@@ -32,7 +32,7 @@ body {
   display: none;
 }
 
-/* Mini‑PFP du requester (toujours visible à droite) */
+/* Mini‑PFP du requester */
 .requester-pfp {
   position: absolute;
   right: 16px;
@@ -89,7 +89,7 @@ body {
   animation: disc-spin 6s linear infinite;
 }
 @keyframes disc-spin {
-  0% { transform: rotate(0deg); }
+  0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
@@ -100,7 +100,7 @@ body {
   justify-content: space-between;
   flex: 1;
   min-width: 0;
-  padding-right: 60px; /* espace pour mini‑PFP */
+  padding-right: 60px; /* espace réservé pour la mini‑PFP */
 }
 
 /* Titre */
@@ -118,7 +118,7 @@ body {
   padding-left: 0;
 }
 @keyframes marquee {
-  0% { transform: translateX(0); }
+  0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
 
@@ -163,12 +163,12 @@ body {
   pointer-events: none;
 }
 
-/* Animations slide */
+/* Animations slide in/out */
 @keyframes slideInLeft { from { transform: translateX(-150%); opacity:0;} to {transform: translateX(0); opacity:1;} }
 @keyframes slideInRight { from { transform: translateX(150%); opacity:0;} to {transform: translateX(0); opacity:1;} }
 @keyframes slideInTop { from { transform: translateY(-50%); opacity:0;} to {transform: translateY(0); opacity:1;} }
 .slide-in-left { animation: slideInLeft 1.5s forwards; }
 .slide-in-right { animation: slideInRight 1.5s forwards; }
 .slide-in-top { animation: slideInTop 1.5s forwards; }
-@keyframes slideOutLeft { from {transform: translateX(0); opacity:1;} to {transform: translateX(-150%); opacity:0;} }
+@keyframes slideOutLeft { from { transform: translateX(0); opacity:1;} to {transform: translateX(-150%); opacity:0;} }
 .slide-out-left { animation: slideOutLeft 1.5s forwards; }
