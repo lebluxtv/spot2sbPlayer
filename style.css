@@ -54,7 +54,7 @@ body {
 
 /* Pochette album */
 .cover-art {
-  flex: 0 0 80px;
+  flex: 0 0 100px;
   aspect-ratio: 1/1;
   background-size: cover;
   background-position: center;
