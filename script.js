@@ -157,16 +157,12 @@ client.on('General.Custom', ({ event, data }) => {
 
 /************************************************************
  * swapToRequesterPfp / swapBackToAlbumArt
- * Utilisées pour remplacer temporairement la cover par la PFP
  ************************************************************/
 function swapToRequesterPfp(coverArtEl, pfpUrl, isDiscMode) {
-  // On fait une petite animation fade
   coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
   coverArtEl.style.opacity = '0';
   setTimeout(() => {
-    // Quand l'opacity est à 0, on change l'image
     coverArtEl.style.backgroundImage = `url('${pfpUrl}')`;
-    // Si on est en mode disc, on ajoute la classe 'disc-mode'
     if (isDiscMode) {
       coverArtEl.classList.add('disc-mode');
     } else {
@@ -180,7 +176,6 @@ function swapBackToAlbumArt(coverArtEl, albumArtUrl, isDiscMode) {
   coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
   coverArtEl.style.opacity = '0';
   setTimeout(() => {
-    // On remet l'album
     coverArtEl.style.backgroundImage = `url('${albumArtUrl}')`;
     if (isDiscMode) {
       coverArtEl.classList.add('disc-mode');
@@ -202,29 +197,24 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeBarFill     = document.getElementById("time-bar-fill");
   const timeBarBg       = document.getElementById("time-bar-bg");
   const timeRemaining   = document.getElementById("time-remaining");
-  const requesterNameEl = document.getElementById("requester-name"); // div pour afficher le pseudo
-  const requesterPfpEl  = document.getElementById("requester-pfp");  // div pour afficher la PFP
+  const requesterNameEl = document.getElementById("requester-name");
+  const requesterPfpEl  = document.getElementById("requester-pfp");
 
-  // Arrière-plan flou
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
     bgBlur.style.opacity = '1';
   }
 
-  // Pochette
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
-    // Pour le slide in, on ne transitionne que la translation (pas l'opacité)
     coverArt.style.transition = `transform 600ms ease-out`;
     coverArt.style.transform = 'translateX(-100%)';
-    // Forcer le reflow
     void coverArt.offsetWidth;
     coverArt.style.transform = 'translateX(0)';
     coverArt.style.opacity = '1';
     if (albumParam === 'disc') {
       coverArt.classList.add('disc-mode');
-      // Après le slide in, réinitialiser le transform inline pour permettre la rotation
       setTimeout(() => {
         coverArt.style.transform = '';
       }, 650);
@@ -233,7 +223,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }
 
-  // Titre & artiste
   if (trackNameSpan) {
     trackNameSpan.textContent = songName;
     trackNameSpan.style.opacity = '1';
@@ -243,7 +232,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     artistNameEl.style.opacity = '1';
   }
 
-  // Affichage du requester (si non vide)
   if (requesterNameEl) {
     if (requesterName) {
       requesterNameEl.textContent = "Requested by " + requesterName;
@@ -254,8 +242,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       requesterNameEl.style.display = "none";
     }
   }
-
-  // Affichage de la PFP (si URL non vide)
   if (requesterPfpEl) {
     if (requesterPfpUrl) {
       requesterPfpEl.style.backgroundImage = `url('${requesterPfpUrl}')`;
@@ -267,24 +253,18 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }
 
-  // Durée & progression
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
 
-  // Retrait temporaire de la transition pour ajuster la barre
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
-  // Mise à jour immédiate
   updateBarAndTimer();
-  // Forcer un reflow
   if (timeBarFill) {
     void timeBarFill.offsetWidth;
-    // Réactiver la transition
     timeBarFill.style.transition = 'width 0.5s linear';
   }
 
-  // Intervalle de progression
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
@@ -302,15 +282,14 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }, 1000);
 
-  // Couleur (barre + textes)
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
     if (trackNameSpan) trackNameSpan.style.color         = colorHex;
     if (artistNameEl)  artistNameEl.style.color          = colorHex;
-    if (timeRemaining) timeRemaining.style.color          = colorHex;
+    const timeRemainingEl = document.getElementById("time-remaining");
+    if (timeRemainingEl) timeRemainingEl.style.color      = colorHex;
   } else {
-    // Utilisation de ColorThief pour extraire une couleur dominante
     const colorThief = new ColorThief();
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -326,7 +305,8 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       if (timeBarFill)   timeBarFill.style.backgroundColor = rgbString(barColorArr);
       if (trackNameSpan) trackNameSpan.style.color         = rgbString(textColorArr);
       if (artistNameEl)  artistNameEl.style.color          = rgbString(textColorArr);
-      if (timeRemaining) timeRemaining.style.color          = rgbString(textColorArr);
+      const timeRemainingEl = document.getElementById("time-remaining");
+      if (timeRemainingEl) timeRemainingEl.style.color     = rgbString(textColorArr);
     };
   }
 
@@ -334,7 +314,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     setupScrollingTitle();
   });
 
-  // Animations d'arrivée
   animateElement(coverArt,     'slide-in-left');
   animateElement(timeBarBg,    'slide-in-right');
   animateElement(timeBarFill,  'slide-in-right');
@@ -342,17 +321,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
 
-  // --- Séquence pour la PFP ---
   if (requesterPfpUrl) {
-    // 1) après 3s, on swap vers la PFP
     setTimeout(() => {
       swapToRequesterPfp(coverArt, requesterPfpUrl, (albumParam === 'disc'));
-
-      // 2) 2s plus tard, on revient à l'album art
       setTimeout(() => {
         swapBackToAlbumArt(coverArt, albumArtUrl, (albumParam === 'disc'));
       }, 2000);
-
     }, 3000);
   }
 }
@@ -539,22 +513,17 @@ function hslToRgb(h, s, l) {
 
 /************************************************************
  * handlePopupDisplay
- * Séquence d'animation fade-out dans l'ordre :
- * 1. Fade out du background, titre, artiste et barre de progression
- * 2. Fade out du "Requested by" et de la mini PFP (si présents)
- * 3. Fade out de la pochette (album art)
  ************************************************************/
 function handlePopupDisplay() {
-  // Annuler toute animation popup en cours
   cancelPopupAnimation();
 
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
 
   const totalDuration = popupDurationSec * 1000;
-  const phase1Duration = totalDuration * 0.5; // fade out background, title, artist, progress bar
-  const phase2Duration = totalDuration * 0.3; // fade out requester info (si présent)
-  const phase3Duration = totalDuration * 0.1; // fade out album art
+  const phase1Duration = totalDuration * 0.5;
+  const phase2Duration = totalDuration * 0.3;
+  const phase3Duration = totalDuration * 0.1;
 
   const player = document.getElementById('player');
   const bgBlur = document.getElementById('bg-blur');
@@ -565,7 +534,6 @@ function handlePopupDisplay() {
   const requesterPfpEl = document.getElementById('requester-pfp');
   const coverArt = document.getElementById('cover-art');
 
-  // S'assurer que tous les éléments sont en full opacité
   if (bgBlur) bgBlur.style.opacity = '1';
   if (trackNameEl) trackNameEl.style.opacity = '1';
   if (artistNameEl) artistNameEl.style.opacity = '1';
@@ -574,9 +542,6 @@ function handlePopupDisplay() {
   if (requesterPfpEl) requesterPfpEl.style.opacity = '1';
   if (coverArt) coverArt.style.opacity = '1';
 
-  // L'album art a déjà effectué son slide in en full opacité via loadNewTrack
-
-  // Phase 1 : Fade out du background, titre, artiste et barre de progression
   if (bgBlur) {
     bgBlur.style.transition = `opacity ${phase1Duration}ms ease-out`;
     bgBlur.style.opacity = '0';
@@ -594,7 +559,6 @@ function handlePopupDisplay() {
     timeRow.style.opacity = '0';
   }
 
-  // Phase 2 : Après phase 1, fade out de la mention "Requested by" et de la mini PFP (si présents)
   const t1 = setTimeout(() => {
     if (requesterNameEl && requesterNameEl.textContent.trim() !== "") {
       requesterNameEl.style.transition = `opacity ${phase2Duration}ms ease-out`;
@@ -607,7 +571,6 @@ function handlePopupDisplay() {
   }, phase1Duration);
   popupTimeouts.push(t1);
 
-  // Phase 3 : Après phase 1 et 2, fade out de l'album art
   const t2 = setTimeout(() => {
     if (coverArt) {
       coverArt.style.transition = `opacity ${phase3Duration}ms ease-out`;
@@ -616,7 +579,6 @@ function handlePopupDisplay() {
   }, phase1Duration + phase2Duration);
   popupTimeouts.push(t2);
 
-  // Final : Après la durée totale, masquer le player
   const t3 = setTimeout(() => {
     if (player) {
       player.style.display = 'none';
@@ -624,3 +586,22 @@ function handlePopupDisplay() {
   }, totalDuration);
   popupTimeouts.push(t3);
 }
+
+/************************************************************
+ * Centrage natif de la page dès le chargement
+ ************************************************************/
+window.addEventListener('DOMContentLoaded', () => {
+  // Forcer la page en plein écran (html + body)
+  document.documentElement.style.margin = '0';
+  document.documentElement.style.padding = '0';
+  document.documentElement.style.height = '100%';
+
+  document.body.style.margin = '0';
+  document.body.style.padding = '0';
+  document.body.style.height = '100%';
+
+  // Centrage horizontal + vertical
+  document.body.style.display = 'flex';
+  document.body.style.justifyContent = 'center';
+  document.body.style.alignItems = 'center';
+});
