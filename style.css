@@ -28,6 +28,10 @@ body {
   justify-content: center;
   align-items: center;
 }
+#infoDiv {
+  margin: auto;
+  text-align: center;
+}
 
 /* Le conteneur principal du player */
 .player {
