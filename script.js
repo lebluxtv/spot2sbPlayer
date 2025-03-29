@@ -205,10 +205,13 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const requesterNameEl = document.getElementById("requester-name");
   const requesterPfpEl  = document.getElementById("requester-pfp");
 
-  if (bgBlur) {
-    bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
-    //bgBlur.style.opacity = '1';
-  }
+if (bgBlur) {
+  bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
+  // Utiliser l'opacité personnalisée passée en URL (divisée par 100)
+  let opacityToUse = opacityParam ? parseFloat(opacityParam) / 100 : 1;
+  bgBlur.style.opacity = opacityToUse.toString();
+}
+
 
   if (coverArt) {
     coverArt.style.display = 'block';
