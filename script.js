@@ -52,7 +52,8 @@ const client = new StreamerbotClient({
 });
 
 // Sélection d’éléments DOM
-const infoDiv   = document.getElementById('infoDiv');
+const infoDiv = document.getElementById('infoDiv');
+const playerDiv = document.getElementById('player');
 
 // Ajout d'un écouteur pour intercepter les erreurs de connexion
 client.on('error', (error) => {
@@ -64,19 +65,30 @@ client.on('error', (error) => {
   }
 });
 
-const playerDiv = document.getElementById('player');
-
-// Mode WPF ?
+// Mode WPF (obligatoire dans cet environnement)
 const isWpfMode = (hostApp === "wpf");
 if (isWpfMode) {
   const spotifyConnected = sessionStorage.getItem("spotifyConnected");
   if (!spotifyConnected && infoDiv) {
+    // Message par défaut pour WPF
     infoDiv.textContent = "Please launch Spotify and play song to preview the player .";
     infoDiv.style.color = "#ff0";
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
 }
+
+// Vérification différée : après 3 secondes, si la connexion WebSocket n'est pas ouverte, afficher le message d'erreur
+setTimeout(() => {
+  // Si la connexion n'est pas établie (par exemple, en cas de refus), on met à jour le message
+  // Ici, nous vérifions si le client possède une propriété 'socket' et son readyState (si disponible)
+  if (!client.socket || client.socket.readyState !== WebSocket.OPEN) {
+    infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
+    infoDiv.style.color = "#f00";
+    infoDiv.style.fontSize = "1.2rem";
+    infoDiv.style.padding = "20px";
+  }
+}, 3000);
 
 // Préparation UI
 if (playerDiv) {
