@@ -59,7 +59,7 @@ const playerDiv = document.getElementById('player');
 client.on('error', (error) => {
   if (error && error.message && error.message.indexOf("WebSocket closed") !== -1) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
-    infoDiv.style.color = "#f00"; // texte en rouge
+    infoDiv.style.color = "#8B0000"; // texte en rouge
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
