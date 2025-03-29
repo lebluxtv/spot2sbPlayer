@@ -207,7 +207,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
 
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
-    bgBlur.style.opacity = '1';
+    //bgBlur.style.opacity = '1';
   }
 
   if (coverArt) {
