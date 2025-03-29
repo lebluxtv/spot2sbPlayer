@@ -3,7 +3,13 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, la colorimétrie, etc.
  ************************************************************/
-
+// Connexion WebSocket (Streamer.bot)
+const client = new StreamerbotClient({
+  host: '127.0.0.1',
+  port: 8080,
+  endpoint: '/',
+  // password: 'streamer.bot'
+});
 // Variables globales
 let currentInterval = null;
 let timeSpent = 0;
@@ -94,13 +100,7 @@ if (opacityParam) {
 
 
 
-// Connexion WebSocket (Streamer.bot)
-const client = new StreamerbotClient({
-  host: '127.0.0.1',
-  port: 8080,
-  endpoint: '/',
-  // password: 'streamer.bot'
-});
+
 
 let lastSongName = "";
 
