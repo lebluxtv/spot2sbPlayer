@@ -69,7 +69,7 @@ if (playerDiv) {
   }
 }
 if (opacityParam) {
-  const numericVal = parseFloat(opacityParam) / 100;
+  const numericVal = parseFloat(opacityParam);
   if (!isNaN(numericVal) && numericVal >= 0 && numericVal <= 1) {
     const bgBlur = document.querySelector('.bg-blur');
     if (bgBlur) {
@@ -77,6 +77,7 @@ if (opacityParam) {
     }
   }
 }
+
 
 // Connexion WebSocket (Streamer.bot)
 const client = new StreamerbotClient({
