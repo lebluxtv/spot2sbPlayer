@@ -3,13 +3,7 @@
  * Gère la connexion WebSocket, la logique de pause/lecture,
  * la barre de progression, la colorimétrie, etc.
  ************************************************************/
-// Connexion WebSocket (Streamer.bot)
-const client = new StreamerbotClient({
-  host: '127.0.0.1',
-  port: 8080,
-  endpoint: '/',
-  // password: 'streamer.bot'
-});
+
 // Variables globales
 let currentInterval = null;
 let timeSpent = 0;
@@ -48,14 +42,23 @@ const opacityParam       = urlParams.get('opacity');
 const hostApp            = urlParams.get('hostApp');
 const popupDurationParam = urlParams.get('popupDuration');
 
-/** Sélection d’éléments DOM **/
+// Connexion WebSocket (Streamer.bot)
+// Déclaration et initialisation de 'client' avant toute utilisation
+const client = new StreamerbotClient({
+  host: '127.0.0.1',
+  port: 8080,
+  endpoint: '/',
+  // password: 'streamer.bot'
+});
+
+// Sélection d’éléments DOM
 const infoDiv   = document.getElementById('infoDiv');
 
 // Ajout d'un écouteur pour intercepter les erreurs de connexion
 client.on('error', (error) => {
   if (error && error.message && error.message.indexOf("WebSocket closed") !== -1) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
-    infoDiv.style.color = "#f00";
+    infoDiv.style.color = "#f00"; // texte en rouge
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
@@ -96,11 +99,6 @@ if (opacityParam) {
     }
   }
 }
-
-
-
-
-
 
 let lastSongName = "";
 
@@ -216,13 +214,12 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const requesterNameEl = document.getElementById("requester-name");
   const requesterPfpEl  = document.getElementById("requester-pfp");
 
-if (bgBlur) {
-  bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
-  // Utiliser l'opacité personnalisée passée en URL (divisée par 100)
-  let opacityToUse = opacityParam ? parseFloat(opacityParam) / 100 : 1;
-  bgBlur.style.opacity = opacityToUse.toString();
-}
-
+  if (bgBlur) {
+    bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
+    // Utiliser l'opacité personnalisée passée en URL (divisée par 100)
+    let opacityToUse = opacityParam ? parseFloat(opacityParam) / 100 : 1;
+    bgBlur.style.opacity = opacityToUse.toString();
+  }
 
   if (coverArt) {
     coverArt.style.display = 'block';
