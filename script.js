@@ -44,6 +44,17 @@ const popupDurationParam = urlParams.get('popupDuration');
 
 /** Sélection d’éléments DOM **/
 const infoDiv   = document.getElementById('infoDiv');
+
+// Ajout d'un écouteur pour intercepter les erreurs de connexion
+client.on('error', (error) => {
+  if (error && error.message && error.message.indexOf("WebSocket closed") !== -1) {
+    infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
+    infoDiv.style.color = "#f00";
+    infoDiv.style.fontSize = "1.2rem";
+    infoDiv.style.padding = "20px";
+  }
+});
+
 const playerDiv = document.getElementById('player');
 
 // Mode WPF ?
