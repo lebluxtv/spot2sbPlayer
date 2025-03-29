@@ -82,6 +82,7 @@ if (opacityParam) {
 
 
 
+
 // Connexion WebSocket (Streamer.bot)
 const client = new StreamerbotClient({
   host: '127.0.0.1',
