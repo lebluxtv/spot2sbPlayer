@@ -84,7 +84,7 @@ setTimeout(() => {
   // Ici, nous vérifions si le client possède une propriété 'socket' et son readyState (si disponible)
   if (!client.socket || client.socket.readyState !== WebSocket.OPEN) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
-    infoDiv.style.color = "#f00";
+    infoDiv.style.color = "#8B0000";
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
