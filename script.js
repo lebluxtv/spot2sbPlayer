@@ -69,14 +69,17 @@ if (playerDiv) {
   }
 }
 if (opacityParam) {
-  const numericVal = parseFloat(opacityParam);
+  const numericVal = parseFloat(opacityParam) / 100;
+  console.log("opacityParam:", opacityParam, "calculated numericVal:", numericVal);
   if (!isNaN(numericVal) && numericVal >= 0 && numericVal <= 1) {
-    const bgBlur = document.querySelector('.bg-blur');
+    const bgBlur = document.getElementById('bg-blur');
     if (bgBlur) {
       bgBlur.style.opacity = numericVal;
+      console.log("Applied opacity:", bgBlur.style.opacity);
     }
   }
 }
+
 
 
 // Connexion WebSocket (Streamer.bot)
