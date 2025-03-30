@@ -5,34 +5,26 @@
   box-sizing: border-box;
 }
 
-/* 
-  On force le html et le body à prendre toute la taille disponible 
-  et on les transforme en conteneur flex 
-  pour centrer le contenu horizontalement ET verticalement 
-*/
-html, body {
+/* Wrapper qui prend toute la hauteur de la fenêtre */
+.wrapper {
   width: 100%;
   height: 100vh; /* 100% de la hauteur de la fenêtre */
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  margin: 0;
-  padding: 0;
+  align-items: center;
 }
 
+/* Le body peut rester minimal */
 body {
   background: #505050;
   font-family: sans-serif;
   color: #fff;
-  /* Ces propriétés ne sont plus nécessaires car déjà définies ci-dessus */
-  /* display: flex;
-  justify-content: center;
-  align-items: center; */
 }
 
+/* Optionnel : centrer le contenu textuel de infoDiv */
 #infoDiv {
-  margin: auto;
+  margin: 20px auto;
   text-align: center;
 }
 
