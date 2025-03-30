@@ -173,3 +173,25 @@ body {
 .slide-in-left {
   animation: slideInLeft 1s forwards;
 }
+
+@keyframes slideInRight {
+  from { transform: translateX(150%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.slide-in-right {
+  animation: slideInRight 1s forwards;
+}
+
+@keyframes slideInTop {
+  from { transform: translateY(-50%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.slide-in-top {
+  animation: slideInTop 1s forwards;
+}
+
+/* Marquee pour le titre défilant */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
