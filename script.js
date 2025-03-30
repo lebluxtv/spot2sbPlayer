@@ -80,8 +80,6 @@ if (isWpfMode) {
 
 // Vérification différée : après 3 secondes, si la connexion WebSocket n'est pas ouverte, afficher le message d'erreur
 setTimeout(() => {
-  // Si la connexion n'est pas établie (par exemple, en cas de refus), on met à jour le message
-  // Ici, nous vérifions si le client possède une propriété 'socket' et son readyState (si disponible)
   if (!client.socket || client.socket.readyState !== WebSocket.OPEN) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
     infoDiv.style.color = "#f00";
@@ -92,10 +90,7 @@ setTimeout(() => {
 
 // Préparation UI
 if (playerDiv) {
-  // Au départ, on le cache
   playerDiv.style.display = 'none';
-
-  // Largeur personnalisée si 'width' est fourni
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
   }
@@ -118,12 +113,10 @@ let lastSongName = "";
  * Réception de l'événement "General.Custom"
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
-  // On ne traite que les payloads ayant widget = 'spot2sbPlayer'
   if (data?.widget !== 'spot2sbPlayer') return;
 
   console.log("Nouveau message spot2sbPlayer reçu:", data);
 
-  // Si noSong = true => on masque le player et on arrête
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
@@ -131,18 +124,15 @@ client.on('General.Custom', ({ event, data }) => {
     return;
   }
 
-  // Mode WPF : on enlève le message de "non connecté"
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
   }
 
-  // Afficher le player (si masqué)
   if (playerDiv) {
     playerDiv.style.display = 'block';
   }
 
-  // Lecture / Pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
@@ -150,12 +140,9 @@ client.on('General.Custom', ({ event, data }) => {
     resumeProgressBar();
   }
 
-  // Récupération du nom du requester (s'il existe)
   const requesterName = data.requesterName || "";
-  // Récupération de la PFP du requester (si existe)
   const requesterPfpUrl = data.requesterPfpUrl || "";
 
-  // Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
@@ -163,19 +150,14 @@ client.on('General.Custom', ({ event, data }) => {
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
 
-    // On appelle loadNewTrack en lui passant requesterName et requesterPfpUrl
     if (songName !== lastSongName) {
       lastSongName = songName;
-      // Avant de charger la nouvelle piste, annuler l'animation popup en cours
       cancelPopupAnimation();
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName, requesterPfpUrl);
-
-      // Lancer l'animation popup si popupDuration est défini
       if (popupDurationParam) {
         handlePopupDisplay();
       }
     } else {
-      // Même musique => on synchronise la progression
       syncProgress(progressSec);
     }
   }
@@ -188,7 +170,7 @@ function swapToRequesterPfp(coverArtEl, pfpUrl, isDiscMode) {
   coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
   coverArtEl.style.opacity = '0';
   setTimeout(() => {
-    coverArtEl.style.backgroundImage = url('${pfpUrl}');
+    coverArtEl.style.backgroundImage = `url('${pfpUrl}')`;
     if (isDiscMode) {
       coverArtEl.classList.add('disc-mode');
     } else {
@@ -202,7 +184,7 @@ function swapBackToAlbumArt(coverArtEl, albumArtUrl, isDiscMode) {
   coverArtEl.style.transition = 'transform 0.6s, opacity 0.6s';
   coverArtEl.style.opacity = '0';
   setTimeout(() => {
-    coverArtEl.style.backgroundImage = url('${albumArtUrl}');
+    coverArtEl.style.backgroundImage = `url('${albumArtUrl}')`;
     if (isDiscMode) {
       coverArtEl.classList.add('disc-mode');
     } else {
@@ -227,16 +209,15 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const requesterPfpEl  = document.getElementById("requester-pfp");
 
   if (bgBlur) {
-    bgBlur.style.backgroundImage = url('${albumArtUrl}');
-    // Utiliser l'opacité personnalisée passée en URL (divisée par 100)
+    bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
     let opacityToUse = opacityParam ? parseFloat(opacityParam) / 100 : 1;
     bgBlur.style.opacity = opacityToUse.toString();
   }
 
   if (coverArt) {
     coverArt.style.display = 'block';
-    coverArt.style.backgroundImage = url('${albumArtUrl}');
-    coverArt.style.transition = transform 600ms ease-out;
+    coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
+    coverArt.style.transition = 'transform 600ms ease-out';
     coverArt.style.transform = 'translateX(-100%)';
     void coverArt.offsetWidth;
     coverArt.style.transform = 'translateX(0)';
@@ -272,7 +253,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   }
   if (requesterPfpEl) {
     if (requesterPfpUrl) {
-      requesterPfpEl.style.backgroundImage = url('${requesterPfpUrl}');
+      requesterPfpEl.style.backgroundImage = `url('${requesterPfpUrl}')`;
       requesterPfpEl.style.display = "block";
       requesterPfpEl.style.opacity = '1';
     } else {
@@ -414,7 +395,7 @@ function setupScrollingTitle() {
 function animateElement(element, animationClass) {
   if (!element) return;
   element.classList.remove(animationClass);
-  void element.offsetWidth; // reflow
+  void element.offsetWidth;
   element.classList.add(animationClass);
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
@@ -437,7 +418,7 @@ function resumeProgressBar() {
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return ${m}:${s < 10 ? "0"+s : s};
+  return `${m}:${s < 10 ? "0"+s : s}`;
 }
 
 /************************************************************
@@ -469,7 +450,7 @@ function adjustColor(r, g, b, factor) {
  * rgbString
  ************************************************************/
 function rgbString([r, g, b]) {
-  return rgb(${r}, ${g}, ${b});
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 /************************************************************
@@ -571,29 +552,29 @@ function handlePopupDisplay() {
   if (coverArt) coverArt.style.opacity = '1';
 
   if (bgBlur) {
-    bgBlur.style.transition = opacity ${phase1Duration}ms ease-out;
+    bgBlur.style.transition = `opacity ${phase1Duration}ms ease-out`;
     bgBlur.style.opacity = '0';
   }
   if (trackNameEl) {
-    trackNameEl.style.transition = opacity ${phase1Duration}ms ease-out;
+    trackNameEl.style.transition = `opacity ${phase1Duration}ms ease-out`;
     trackNameEl.style.opacity = '0';
   }
   if (artistNameEl) {
-    artistNameEl.style.transition = opacity ${phase1Duration}ms ease-out;
+    artistNameEl.style.transition = `opacity ${phase1Duration}ms ease-out`;
     artistNameEl.style.opacity = '0';
   }
   if (timeRow) {
-    timeRow.style.transition = opacity ${phase1Duration}ms ease-out;
+    timeRow.style.transition = `opacity ${phase1Duration}ms ease-out`;
     timeRow.style.opacity = '0';
   }
 
   const t1 = setTimeout(() => {
     if (requesterNameEl && requesterNameEl.textContent.trim() !== "") {
-      requesterNameEl.style.transition = opacity ${phase2Duration}ms ease-out;
+      requesterNameEl.style.transition = `opacity ${phase2Duration}ms ease-out`;
       requesterNameEl.style.opacity = '0';
     }
     if (requesterPfpEl && requesterPfpEl.style.display !== "none") {
-      requesterPfpEl.style.transition = opacity ${phase2Duration}ms ease-out;
+      requesterPfpEl.style.transition = `opacity ${phase2Duration}ms ease-out`;
       requesterPfpEl.style.opacity = '0';
     }
   }, phase1Duration);
@@ -601,7 +582,7 @@ function handlePopupDisplay() {
 
   const t2 = setTimeout(() => {
     if (coverArt) {
-      coverArt.style.transition = opacity ${phase3Duration}ms ease-out;
+      coverArt.style.transition = `opacity ${phase3Duration}ms ease-out`;
       coverArt.style.opacity = '0';
     }
   }, phase1Duration + phase2Duration);
@@ -619,7 +600,6 @@ function handlePopupDisplay() {
  * Centrage natif de la page dès le chargement
  ************************************************************/
 window.addEventListener('DOMContentLoaded', () => {
-  // Forcer la page en plein écran (html + body)
   document.documentElement.style.margin = '0';
   document.documentElement.style.padding = '0';
   document.documentElement.style.height = '100%';
@@ -628,7 +608,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.body.style.padding = '0';
   document.body.style.height = '100%';
 
-  // Centrage horizontal + vertical
   document.body.style.display = 'flex';
   document.body.style.justifyContent = 'center';
   document.body.style.alignItems = 'center';
