@@ -5,27 +5,28 @@
   box-sizing: border-box;
 }
 
-/* Wrapper qui prend toute la hauteur de la fenêtre */
-.wrapper {
+/* 
+  On force le html et le body à prendre toute la taille disponible 
+  et on les transforme en conteneur flex 
+  pour centrer le contenu horizontalement ET verticalement 
+*/
+html, body {
   width: 100%;
-  height: 100vh; /* 100% de la hauteur de la fenêtre */
+  height: 100%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
 }
 
-/* Le body peut rester minimal */
 body {
   background: #505050;
   font-family: sans-serif;
   color: #fff;
-}
-
-/* Optionnel : centrer le contenu textuel de infoDiv */
-#infoDiv {
-  margin: 20px auto;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Le conteneur principal du player */
