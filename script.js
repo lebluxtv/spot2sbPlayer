@@ -9,8 +9,6 @@ let currentInterval = null;
 let timeSpent = 0;
 let trackDuration = 180;
 let isPaused = false;
-
-// Pour gérer les timeouts de l'animation popup
 let popupTimeouts = [];
 
 /** Fonction pour annuler l’animation popup en cours et réinitialiser l’opacité **/
@@ -43,7 +41,6 @@ const hostApp            = urlParams.get('hostApp');
 const popupDurationParam = urlParams.get('popupDuration');
 
 // Connexion WebSocket (Streamer.bot)
-// Déclaration et initialisation de 'client' avant toute utilisation
 const client = new StreamerbotClient({
   host: '127.0.0.1',
   port: 8080,
@@ -55,22 +52,21 @@ const client = new StreamerbotClient({
 const infoDiv = document.getElementById('infoDiv');
 const playerDiv = document.getElementById('player');
 
-// Ajout d'un écouteur pour intercepter les erreurs de connexion
+// Gestion des erreurs de connexion
 client.on('error', (error) => {
   if (error && error.message && error.message.indexOf("WebSocket closed") !== -1) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
-    infoDiv.style.color = "#8B0000"; // texte en rouge foncé
+    infoDiv.style.color = "#8B0000";
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
 });
 
-// Mode WPF (obligatoire dans cet environnement)
+// Mode WPF (obligatoire)
 const isWpfMode = (hostApp === "wpf");
 if (isWpfMode) {
   const spotifyConnected = sessionStorage.getItem("spotifyConnected");
   if (!spotifyConnected && infoDiv) {
-    // Message par défaut pour WPF
     infoDiv.textContent = "Please launch Spotify and play song to preview the player .";
     infoDiv.style.color = "#ff0";
     infoDiv.style.fontSize = "1.2rem";
@@ -78,7 +74,7 @@ if (isWpfMode) {
   }
 }
 
-// Vérification différée : après 3 secondes, si la connexion WebSocket n'est pas ouverte, afficher le message d'erreur
+// Vérification différée après 3 secondes
 setTimeout(() => {
   if (!client.socket || client.socket.readyState !== WebSocket.OPEN) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
@@ -90,7 +86,6 @@ setTimeout(() => {
 
 // Préparation UI
 if (playerDiv) {
-  // Au départ, on le cache
   playerDiv.style.display = 'none';
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
@@ -98,12 +93,10 @@ if (playerDiv) {
 }
 if (opacityParam) {
   const numericVal = parseFloat(opacityParam) / 100;
-  console.log("opacityParam:", opacityParam, "calculated numericVal:", numericVal);
   if (!isNaN(numericVal) && numericVal >= 0 && numericVal <= 1) {
     const bgBlur = document.getElementById('bg-blur');
     if (bgBlur) {
       bgBlur.style.opacity = numericVal;
-      console.log("Applied opacity:", bgBlur.style.opacity);
     }
   }
 }
@@ -115,7 +108,6 @@ let lastSongName = "";
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
   if (data?.widget !== 'spot2sbPlayer') return;
-  console.log("Nouveau message spot2sbPlayer reçu:", data);
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
@@ -191,15 +183,15 @@ function swapBackToAlbumArt(coverArtEl, albumArtUrl, isDiscMode) {
  * loadNewTrack
  ************************************************************/
 function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName, requesterPfpUrl) {
-  const bgBlur          = document.getElementById("bg-blur");
-  const coverArt        = document.getElementById("cover-art");
-  const trackNameSpan   = document.getElementById("track-name");
-  const artistNameEl    = document.getElementById("artist-name");
-  const timeBarFill     = document.getElementById("time-bar-fill");
-  const timeBarBg       = document.getElementById("time-bar-bg");
-  const timeRemaining   = document.getElementById("time-remaining");
+  const bgBlur = document.getElementById("bg-blur");
+  const coverArt = document.getElementById("cover-art");
+  const trackNameSpan = document.getElementById("track-name");
+  const artistNameEl = document.getElementById("artist-name");
+  const timeBarFill = document.getElementById("time-bar-fill");
+  const timeBarBg = document.getElementById("time-bar-bg");
+  const timeRemaining = document.getElementById("time-remaining");
   const requesterNameEl = document.getElementById("requester-name");
-  const requesterPfpEl  = document.getElementById("requester-pfp");
+  const requesterPfpEl = document.getElementById("requester-pfp");
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
     let opacityToUse = opacityParam ? parseFloat(opacityParam) / 100 : 1;
@@ -227,7 +219,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     trackNameSpan.style.opacity = '1';
   }
   if (artistNameEl) {
-    artistNameEl.textContent  = artistName;
+    artistNameEl.textContent = artistName;
     artistNameEl.style.opacity = '1';
   }
   if (requesterNameEl) {
@@ -251,7 +243,7 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     }
   }
   trackDuration = durationSec;
-  timeSpent     = Math.min(progressSec, durationSec);
+  timeSpent = Math.min(progressSec, durationSec);
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
@@ -278,11 +270,11 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   }, 1000);
   if (customColor) {
     const colorHex = '#' + customColor;
-    if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
-    if (trackNameSpan) trackNameSpan.style.color         = colorHex;
-    if (artistNameEl)  artistNameEl.style.color          = colorHex;
+    if (timeBarFill) timeBarFill.style.backgroundColor = colorHex;
+    if (trackNameSpan) trackNameSpan.style.color = colorHex;
+    if (artistNameEl) artistNameEl.style.color = colorHex;
     const timeRemainingEl = document.getElementById("time-remaining");
-    if (timeRemainingEl) timeRemainingEl.style.color      = colorHex;
+    if (timeRemainingEl) timeRemainingEl.style.color = colorHex;
   } else {
     const colorThief = new ColorThief();
     const img = new Image();
@@ -292,24 +284,24 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       let [r, g, b] = colorThief.getColor(img);
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
-      const barColorArr  = adjustColor(r, g, b, 0.8);
+      const barColorArr = adjustColor(r, g, b, 0.8);
       const textColorArr = adjustColor(r, g, b, 1.2);
-      if (timeBarFill)   timeBarFill.style.backgroundColor = rgbString(barColorArr);
-      if (trackNameSpan) trackNameSpan.style.color         = rgbString(textColorArr);
-      if (artistNameEl)  artistNameEl.style.color          = rgbString(textColorArr);
+      if (timeBarFill) timeBarFill.style.backgroundColor = rgbString(barColorArr);
+      if (trackNameSpan) trackNameSpan.style.color = rgbString(textColorArr);
+      if (artistNameEl) artistNameEl.style.color = rgbString(textColorArr);
       const timeRemainingEl = document.getElementById("time-remaining");
-      if (timeRemainingEl) timeRemainingEl.style.color     = rgbString(textColorArr);
+      if (timeRemainingEl) timeRemainingEl.style.color = rgbString(textColorArr);
     };
   }
   requestAnimationFrame(() => {
     setupScrollingTitle();
   });
-  animateElement(coverArt,     'slide-in-left');
-  animateElement(timeBarBg,    'slide-in-right');
-  animateElement(timeBarFill,  'slide-in-right');
-  animateElement(timeRemaining,'slide-in-right');
+  animateElement(coverArt, 'slide-in-left');
+  animateElement(timeBarBg, 'slide-in-right');
+  animateElement(timeBarFill, 'slide-in-right');
+  animateElement(timeRemaining, 'slide-in-right');
   animateElement(artistNameEl, 'slide-in-top');
-  animateElement(trackNameSpan,'slide-in-top');
+  animateElement(trackNameSpan, 'slide-in-top');
   if (requesterPfpUrl) {
     setTimeout(() => {
       swapToRequesterPfp(coverArt, requesterPfpUrl, (albumParam === 'disc'));
@@ -335,7 +327,7 @@ function syncProgress(progressSec) {
  * updateBarAndTimer
  ************************************************************/
 function updateBarAndTimer() {
-  const timeBarFill   = document.getElementById("time-bar-fill");
+  const timeBarFill = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
   if (!timeBarFill || !timeRemaining) return;
   const pct = 100 - (timeSpent / trackDuration * 100);
@@ -349,13 +341,13 @@ function updateBarAndTimer() {
  ************************************************************/
 function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
-  const span      = document.getElementById('track-name');
+  const span = document.getElementById('track-name');
   if (!container || !span) return;
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
   requestAnimationFrame(() => {
     const containerWidth = container.offsetWidth;
-    const textWidth      = span.scrollWidth;
+    const textWidth = span.scrollWidth;
     if (textWidth > containerWidth) {
       span.style.paddingLeft = containerWidth + 'px';
       span.style.animation = 'marquee 10s linear infinite';
@@ -372,7 +364,7 @@ function setupScrollingTitle() {
 function animateElement(element, animationClass) {
   if (!element) return;
   element.classList.remove(animationClass);
-  void element.offsetWidth; // reflow
+  void element.offsetWidth;
   element.classList.add(animationClass);
   element.addEventListener('animationend', () => {
     element.classList.remove(animationClass);
@@ -444,8 +436,8 @@ function makeVibrant(r, g, b, minSat, maxLight) {
  * rgbToHsl / hslToRgb
  ************************************************************/
 function rgbToHsl(r, g, b) {
-  r /= 255; 
-  g /= 255; 
+  r /= 255;
+  g /= 255;
   b /= 255;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -567,15 +559,6 @@ function handlePopupDisplay() {
  * Centrage natif de la page dès le chargement
  ************************************************************/
 window.addEventListener('DOMContentLoaded', () => {
-  // Laisser le CSS gérer la hauteur via 100vh.
+  // Laisser le CSS gérer le centrage avec .wrapper.
   // Ne redéfinissez pas la hauteur ici.
-  document.documentElement.style.margin = '0';
-  document.documentElement.style.padding = '0';
-  //document.documentElement.style.height = '100vh'; // Laissez le CSS faire le travail
-
-  document.body.style.margin = '0';
-  document.body.style.padding = '0';
-  //document.body.style.height = '100vh'; // Laissez le CSS faire le travail
-
-  // Centrage horizontal + vertical est déjà géré par le CSS.
 });
