@@ -626,7 +626,7 @@ document.documentElement.style.height = '100vh';
 
   document.body.style.margin = '0';
   document.body.style.padding = '0';
-  document.body.style.height = '10document.body.style.height = '100vh';0%';
+document.body.style.height = '100vh';
 
   // Centrage horizontal + vertical
   document.body.style.display = 'flex';
