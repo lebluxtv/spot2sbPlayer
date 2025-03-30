@@ -622,11 +622,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Forcer la page en plein écran (html + body)
   document.documentElement.style.margin = '0';
   document.documentElement.style.padding = '0';
-  document.documentElement.style.height = '100%';
+document.documentElement.style.height = '100vh';
 
   document.body.style.margin = '0';
   document.body.style.padding = '0';
-  document.body.style.height = '100%';
+  document.body.style.height = '10document.body.style.height = '100vh';0%';
 
   // Centrage horizontal + vertical
   document.body.style.display = 'flex';
