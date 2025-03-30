@@ -59,7 +59,7 @@ const playerDiv = document.getElementById('player');
 client.on('error', (error) => {
   if (error && error.message && error.message.indexOf("WebSocket closed") !== -1) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
-    infoDiv.style.color = "#8B0000"; // texte en rouge
+    infoDiv.style.color = "#8B0000"; // texte en rouge foncé
     infoDiv.style.fontSize = "1.2rem";
     infoDiv.style.padding = "20px";
   }
@@ -80,8 +80,6 @@ if (isWpfMode) {
 
 // Vérification différée : après 3 secondes, si la connexion WebSocket n'est pas ouverte, afficher le message d'erreur
 setTimeout(() => {
-  // Si la connexion n'est pas établie (par exemple, en cas de refus), on met à jour le message
-  // Ici, nous vérifions si le client possède une propriété 'socket' et son readyState (si disponible)
   if (!client.socket || client.socket.readyState !== WebSocket.OPEN) {
     infoDiv.textContent = "Check your streamer.bot Websocket Server, it must be enabled !";
     infoDiv.style.color = "#8B0000";
@@ -94,8 +92,6 @@ setTimeout(() => {
 if (playerDiv) {
   // Au départ, on le cache
   playerDiv.style.display = 'none';
-
-  // Largeur personnalisée si 'width' est fourni
   if (customWidth) {
     playerDiv.style.width = customWidth + 'px';
   }
@@ -118,64 +114,43 @@ let lastSongName = "";
  * Réception de l'événement "General.Custom"
  ************************************************************/
 client.on('General.Custom', ({ event, data }) => {
-  // On ne traite que les payloads ayant widget = 'spot2sbPlayer'
   if (data?.widget !== 'spot2sbPlayer') return;
-
   console.log("Nouveau message spot2sbPlayer reçu:", data);
-
-  // Si noSong = true => on masque le player et on arrête
   if (data.noSong === true) {
     if (playerDiv) {
       playerDiv.style.display = 'none';
     }
     return;
   }
-
-  // Mode WPF : on enlève le message de "non connecté"
   if (isWpfMode && infoDiv) {
     infoDiv.textContent = "";
     sessionStorage.setItem("spotifyConnected", "true");
   }
-
-  // Afficher le player (si masqué)
   if (playerDiv) {
     playerDiv.style.display = 'block';
   }
-
-  // Lecture / Pause
   const stateValue = data.state || "paused";
   if (stateValue === 'paused') {
     pauseProgressBar();
   } else {
     resumeProgressBar();
   }
-
-  // Récupération du nom du requester (s'il existe)
   const requesterName = data.requesterName || "";
-  // Récupération de la PFP du requester (si existe)
   const requesterPfpUrl = data.requesterPfpUrl || "";
-
-  // Mise à jour de la piste
   if (data.songName) {
     const songName    = data.songName;
     const artistName  = data.artistName;
     const albumArtUrl = data.albumArtUrl || "";
     const durationSec = data.duration   || 180;
     const progressSec = data.progress   || 0;
-
-    // On appelle loadNewTrack en lui passant requesterName et requesterPfpUrl
     if (songName !== lastSongName) {
       lastSongName = songName;
-      // Avant de charger la nouvelle piste, annuler l'animation popup en cours
       cancelPopupAnimation();
       loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSec, requesterName, requesterPfpUrl);
-
-      // Lancer l'animation popup si popupDuration est défini
       if (popupDurationParam) {
         handlePopupDisplay();
       }
     } else {
-      // Même musique => on synchronise la progression
       syncProgress(progressSec);
     }
   }
@@ -225,14 +200,11 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
   const timeRemaining   = document.getElementById("time-remaining");
   const requesterNameEl = document.getElementById("requester-name");
   const requesterPfpEl  = document.getElementById("requester-pfp");
-
   if (bgBlur) {
     bgBlur.style.backgroundImage = `url('${albumArtUrl}')`;
-    // Utiliser l'opacité personnalisée passée en URL (divisée par 100)
     let opacityToUse = opacityParam ? parseFloat(opacityParam) / 100 : 1;
     bgBlur.style.opacity = opacityToUse.toString();
   }
-
   if (coverArt) {
     coverArt.style.display = 'block';
     coverArt.style.backgroundImage = `url('${albumArtUrl}')`;
@@ -250,7 +222,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       coverArt.classList.remove('disc-mode');
     }
   }
-
   if (trackNameSpan) {
     trackNameSpan.textContent = songName;
     trackNameSpan.style.opacity = '1';
@@ -259,7 +230,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     artistNameEl.textContent  = artistName;
     artistNameEl.style.opacity = '1';
   }
-
   if (requesterNameEl) {
     if (requesterName) {
       requesterNameEl.textContent = "Requested by " + requesterName;
@@ -280,10 +250,8 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       requesterPfpEl.style.display = "none";
     }
   }
-
   trackDuration = durationSec;
   timeSpent     = Math.min(progressSec, durationSec);
-
   if (timeBarFill) {
     timeBarFill.style.transition = 'none';
   }
@@ -292,7 +260,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
     void timeBarFill.offsetWidth;
     timeBarFill.style.transition = 'width 0.5s linear';
   }
-
   if (currentInterval) {
     clearInterval(currentInterval);
     currentInterval = null;
@@ -309,7 +276,6 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       }
     }
   }, 1000);
-
   if (customColor) {
     const colorHex = '#' + customColor;
     if (timeBarFill)   timeBarFill.style.backgroundColor = colorHex;
@@ -326,10 +292,8 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       let [r, g, b] = colorThief.getColor(img);
       [r, g, b] = makeVibrant(r, g, b, 0.5, 0.8);
       [r, g, b] = ensureMinimumLightness(r, g, b, 0.3);
-
       const barColorArr  = adjustColor(r, g, b, 0.8);
       const textColorArr = adjustColor(r, g, b, 1.2);
-
       if (timeBarFill)   timeBarFill.style.backgroundColor = rgbString(barColorArr);
       if (trackNameSpan) trackNameSpan.style.color         = rgbString(textColorArr);
       if (artistNameEl)  artistNameEl.style.color          = rgbString(textColorArr);
@@ -337,18 +301,15 @@ function loadNewTrack(songName, artistName, albumArtUrl, durationSec, progressSe
       if (timeRemainingEl) timeRemainingEl.style.color     = rgbString(textColorArr);
     };
   }
-
   requestAnimationFrame(() => {
     setupScrollingTitle();
   });
-
   animateElement(coverArt,     'slide-in-left');
   animateElement(timeBarBg,    'slide-in-right');
   animateElement(timeBarFill,  'slide-in-right');
   animateElement(timeRemaining,'slide-in-right');
   animateElement(artistNameEl, 'slide-in-top');
   animateElement(trackNameSpan,'slide-in-top');
-
   if (requesterPfpUrl) {
     setTimeout(() => {
       swapToRequesterPfp(coverArt, requesterPfpUrl, (albumParam === 'disc'));
@@ -377,10 +338,8 @@ function updateBarAndTimer() {
   const timeBarFill   = document.getElementById("time-bar-fill");
   const timeRemaining = document.getElementById("time-remaining");
   if (!timeBarFill || !timeRemaining) return;
-
   const pct = 100 - (timeSpent / trackDuration * 100);
   timeBarFill.style.width = pct + "%";
-
   const timeLeft = trackDuration - timeSpent;
   timeRemaining.textContent = formatTime(timeLeft);
 }
@@ -392,7 +351,6 @@ function setupScrollingTitle() {
   const container = document.querySelector('.track-name');
   const span      = document.getElementById('track-name');
   if (!container || !span) return;
-
   span.style.animation = 'none';
   span.style.paddingLeft = '0';
   requestAnimationFrame(() => {
@@ -493,7 +451,6 @@ function rgbToHsl(r, g, b) {
   const min = Math.min(r, g, b);
   let h, s;
   let l = (max + min) / 2;
-
   if (max === min) {
     h = 0;
     s = 0;
@@ -528,7 +485,6 @@ function hslToRgb(h, s, l) {
     ? (l * (1 + s))
     : (l + s - l*s);
   const p = 2*l - q;
-
   const r = hue2rgb(p, q, h + 1/3);
   const g = hue2rgb(p, q, h);
   const b = hue2rgb(p, q, h - 1/3);
@@ -544,15 +500,12 @@ function hslToRgb(h, s, l) {
  ************************************************************/
 function handlePopupDisplay() {
   cancelPopupAnimation();
-
   const popupDurationSec = parseFloat(popupDurationParam);
   if (!popupDurationSec || isNaN(popupDurationSec) || popupDurationSec <= 0) return;
-
   const totalDuration = popupDurationSec * 1000;
   const phase1Duration = totalDuration * 0.5;
   const phase2Duration = totalDuration * 0.3;
   const phase3Duration = totalDuration * 0.1;
-
   const player = document.getElementById('player');
   const bgBlur = document.getElementById('bg-blur');
   const trackNameEl = document.getElementById('track-name');
@@ -561,7 +514,6 @@ function handlePopupDisplay() {
   const requesterNameEl = document.getElementById('requester-name');
   const requesterPfpEl = document.getElementById('requester-pfp');
   const coverArt = document.getElementById('cover-art');
-
   if (bgBlur) bgBlur.style.opacity = '1';
   if (trackNameEl) trackNameEl.style.opacity = '1';
   if (artistNameEl) artistNameEl.style.opacity = '1';
@@ -569,7 +521,6 @@ function handlePopupDisplay() {
   if (requesterNameEl) requesterNameEl.style.opacity = '1';
   if (requesterPfpEl) requesterPfpEl.style.opacity = '1';
   if (coverArt) coverArt.style.opacity = '1';
-
   if (bgBlur) {
     bgBlur.style.transition = `opacity ${phase1Duration}ms ease-out`;
     bgBlur.style.opacity = '0';
@@ -586,7 +537,6 @@ function handlePopupDisplay() {
     timeRow.style.transition = `opacity ${phase1Duration}ms ease-out`;
     timeRow.style.opacity = '0';
   }
-
   const t1 = setTimeout(() => {
     if (requesterNameEl && requesterNameEl.textContent.trim() !== "") {
       requesterNameEl.style.transition = `opacity ${phase2Duration}ms ease-out`;
@@ -598,7 +548,6 @@ function handlePopupDisplay() {
     }
   }, phase1Duration);
   popupTimeouts.push(t1);
-
   const t2 = setTimeout(() => {
     if (coverArt) {
       coverArt.style.transition = `opacity ${phase3Duration}ms ease-out`;
@@ -606,7 +555,6 @@ function handlePopupDisplay() {
     }
   }, phase1Duration + phase2Duration);
   popupTimeouts.push(t2);
-
   const t3 = setTimeout(() => {
     if (player) {
       player.style.display = 'none';
@@ -619,17 +567,15 @@ function handlePopupDisplay() {
  * Centrage natif de la page dès le chargement
  ************************************************************/
 window.addEventListener('DOMContentLoaded', () => {
-  // Forcer la page en plein écran (html + body)
+  // Laisser le CSS gérer la hauteur via 100vh.
+  // Ne redéfinissez pas la hauteur ici.
   document.documentElement.style.margin = '0';
   document.documentElement.style.padding = '0';
-//document.documentElement.style.height = '100vh';
+  //document.documentElement.style.height = '100vh'; // Laissez le CSS faire le travail
 
   document.body.style.margin = '0';
   document.body.style.padding = '0';
-//document.body.style.height = '100vh';
+  //document.body.style.height = '100vh'; // Laissez le CSS faire le travail
 
-  // Centrage horizontal + vertical
-  document.body.style.display = 'flex';
-  document.body.style.justifyContent = 'center';
-  document.body.style.alignItems = 'center';
+  // Centrage horizontal + vertical est déjà géré par le CSS.
 });
