@@ -7,7 +7,6 @@
 </head>
 <body>
   <div id="infoDiv"></div>
-
   <div class="player" id="player" style="display:none;">
     <div class="bg-blur" id="bg-blur"></div>
 
@@ -29,8 +28,48 @@
       <div class="requester-pfp" id="requester-pfp"></div>
     </div>
   </div>
-  <script src="https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js"></script>
-   <script src="https://unpkg.com/colorthief/dist/color-thief.umd.js"></script>
-  <script src="script.js"></script>
+ <script>
+    // Fonction de chargement d'un script, renvoie une promesse
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Erreur de chargement : " + src));
+        document.head.appendChild(script);
+      });
+    }
+
+    // Fonction qui charge une librairie en testant trois sources : unpkg, jsDelivr, puis local
+    function loadLibrary(unpkgUrl, jsdelivrUrl, localUrl) {
+      return loadScript(unpkgUrl)
+        .catch(() => {
+          console.warn("CDN unpkg indisponible, passage à jsDelivr pour :", unpkgUrl);
+          return loadScript(jsdelivrUrl);
+        })
+        .catch(() => {
+          console.warn("CDN jsDelivr indisponible, passage au fallback local pour :", jsdelivrUrl);
+          return loadScript(localUrl);
+        });
+    }
+
+    // Charger StreamerbotClient
+    loadLibrary(
+      "https://unpkg.com/@streamerbot/client/dist/streamerbot-client.js",
+      "https://cdn.jsdelivr.net/npm/@streamerbot/client/dist/streamerbot-client.js",
+      "assets/js/websocket-client.umd.js"
+    )
+    // Charger ColorThief ensuite
+    .then(() => loadLibrary(
+      "https://unpkg.com/colorthief/dist/color-thief.umd.js",
+      "https://cdn.jsdelivr.net/npm/colorthief@2.3.2/dist/color-thief.umd.js",
+      "assets/js/color-thief.umd.js"
+    ))
+    // Charger enfin ton script principal
+    .then(() => loadScript("script.js"))
+    .catch((err) => {
+      console.error("Erreur lors du chargement des scripts : ", err);
+    });
+  </script>
 </body>
 </html>
